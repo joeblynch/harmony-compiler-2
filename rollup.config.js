@@ -54,7 +54,6 @@ export default [
         compress: {
           // Aggressive compression options
           drop_console: false, // Keep console logs for debugging
-          drop_debugger: true, // Remove debugger statements
           pure_funcs: [], // Don't remove any function calls
           passes: 3, // Multiple passes for better compression
           keep_fargs: false, // Remove unused function arguments
@@ -133,7 +132,6 @@ export default [
         compress: {
           // Aggressive but safe compression for audio worklet
           drop_console: false, // Keep console logs for debugging
-          drop_debugger: true, // Remove debugger statements
           pure_funcs: [], // Don't remove any function calls
           passes: 3, // Multiple passes for better compression
           keep_fargs: false, // Remove unused function arguments
