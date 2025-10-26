@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Bitmap Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: monospace;
+            background-color: hsl(197, 24%, 10%);
+            color: hsl(197, 100%, 90%);
+            min-height: 100vh;
+        }
+        .container {
+            min-height: 100vh;
+            padding: 20px;
+            background-color: hsl(197, 24%, 10%);
+        }
+        canvas {
+            border: 2px solid hsl(197, 36%, 20%);
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            background-color: hsl(197, 36%, 6%);
+        }
+        .info {
+            margin-bottom: 15px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 8px 16px;
+            font-family: monospace;
+            cursor: pointer;
+            background-color: hsl(197, 36%, 20%);
+            color: hsl(197, 100%, 90%);
+            border: 1px solid hsl(197, 36%, 30%);
+        }
+        button:hover {
+            background-color: hsl(197, 36%, 25%);
+        }
+        #hoverInfo {
+            position: fixed;
+            padding: 5px 10px;
+            background-color: hsl(197, 36%, 15%);
+            border: 1px solid hsl(197, 36%, 30%);
+            border-radius: 3px;
+            pointer-events: none;
+            display: none;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        canvas {
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="info">
+            <h2>Memory Bitmap Viewer</h2>
+            <p>Memory: 4096 words × 18 bits</p>
+            <p>Display: 16 words per row (288 pixels wide × 256 pixels tall)</p>
+            <p>Encoding: 0=black, 1=white</p>
+            <p id="fillInfo">Upload a file to visualize its binary data</p>
+        </div>
+        <canvas id="memoryCanvas" width="288" height="256"></canvas>
+        <br>
+        <button onclick="document.getElementById('fileInput').click()">Upload File</button>
+        <input type="file" id="fileInput" style="display: none;" onchange="loadFile(event)">
+        <div id="hoverInfo"></div>
+    </div>
+
+    <script>
+        const MEMORY_SIZE = 4096;  // Number of words
+        const WORD_BITS = 18;       // Bits per word (only 18 LSB used)
+        const WORDS_PER_ROW = 16;   // 16 words per row
+        const CANVAS_WIDTH = WORDS_PER_ROW * WORD_BITS;  // 288 pixels
+        const CANVAS_HEIGHT = MEMORY_SIZE / WORDS_PER_ROW; // 256 pixels
+
+        // Memory array
+        let memory = new Uint32Array(MEMORY_SIZE);
+        
+        // Track how much memory is filled (continuous block from address 0)
+        let filledWordCount = 0;
+        
+        // Canvas setup
+        const canvas = document.getElementById('memoryCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Color scheme - convert HSL to RGB
+        function hslToRgb(h, s, l) {
+            s /= 100;
+            l /= 100;
+            const k = n => (n + h / 30) % 12;
+            const a = s * Math.min(l, 1 - l);
+            const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+            return [Math.round(255 * f(0)), Math.round(255 * f(8)), Math.round(255 * f(4))];
+        }
+        
+        const COLOR_ONE = hslToRgb(197, 100, 90);  // Light cyan for 1 bits
+        const COLOR_ZERO = hslToRgb(197, 36, 6);   // Dark blue for 0 bits
+        
+        // Create image data buffer for efficient rendering
+        const imageData = ctx.createImageData(CANVAS_WIDTH, CANVAS_HEIGHT);
+        const data = imageData.data;
+
+        // Load file and render as memory
+        function loadFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const arrayBuffer = e.target.result;
+                    
+                    // Uint32Array requires buffer length to be multiple of 4
+                    const validLength = Math.floor(arrayBuffer.byteLength / 4) * 4;
+                    const validBuffer = arrayBuffer.slice(0, validLength);
+                    const fileData = new Uint32Array(validBuffer);
+                    
+                    // Clear all memory first
+                    memory.fill(0);
+                    
+                    // Copy first 4096 words (or fewer if file is smaller)
+                    const wordsToCopy = Math.min(fileData.length, MEMORY_SIZE);
+                    if (wordsToCopy > 0) {
+                        memory.set(fileData.subarray(0, wordsToCopy), 0);
+                    }
+                    
+                    filledWordCount = wordsToCopy;
+                    
+                    // Update display info
+                    const fillPercentage = (filledWordCount / MEMORY_SIZE) * 100;
+                    document.getElementById('fillInfo').textContent = 
+                        `Filled: ${filledWordCount} words (${fillPercentage.toFixed(1)}%) | Source: ${file.name}`;
+                    
+                    renderMemory();
+                } catch (error) {
+                    console.error('Error loading file:', error);
+                    document.getElementById('fillInfo').textContent = 
+                        `Error loading file: ${file.name}`;
+                }
+            };
+            reader.onerror = function() {
+                document.getElementById('fillInfo').textContent = 
+                    `Failed to read file: ${file.name}`;
+            };
+            reader.readAsArrayBuffer(file);
+            
+            // Reset file input so the same file can be loaded again
+            event.target.value = '';
+        }
+
+        // Render memory to canvas
+        function renderMemory() {
+            // Fill with background color (0 bits color)
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = COLOR_ZERO[0];     // R
+                data[i + 1] = COLOR_ZERO[1]; // G
+                data[i + 2] = COLOR_ZERO[2]; // B
+                data[i + 3] = 255;           // A
+            }
+
+            // Iterate through memory
+            for (let wordIdx = 0; wordIdx < MEMORY_SIZE; wordIdx++) {
+                const word = memory[wordIdx] & 0x3FFFF; // Mask to 18 bits
+                
+                // Calculate position in canvas
+                const row = Math.floor(wordIdx / WORDS_PER_ROW);
+                const col = wordIdx % WORDS_PER_ROW;
+                
+                // Draw each bit of the word
+                for (let bit = 0; bit < WORD_BITS; bit++) {
+                    const bitValue = (word >> (WORD_BITS - 1 - bit)) & 1;
+                    
+                    // Calculate pixel position
+                    const x = col * WORD_BITS + bit;
+                    const y = row;
+                    
+                    // Set pixel in image data (4 bytes per pixel: RGBA)
+                    const pixelIndex = (y * CANVAS_WIDTH + x) * 4;
+                    
+                    if (bitValue === 1) {
+                        data[pixelIndex] = COLOR_ONE[0];     // R
+                        data[pixelIndex + 1] = COLOR_ONE[1]; // G
+                        data[pixelIndex + 2] = COLOR_ONE[2]; // B
+                    }
+                    // 0 bits already set to COLOR_ZERO in initialization
+                }
+            }
+            
+            // Put the image data onto the canvas
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // Initialize with blank canvas
+        renderMemory();
+
+        // Hover functionality - show memory address and value in octal
+        const hoverInfo = document.getElementById('hoverInfo');
+        
+        canvas.addEventListener('mousemove', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Calculate which word is being hovered over
+            const col = Math.floor(x / WORD_BITS);
+            const row = Math.floor(y);
+            
+            // Check if within valid bounds
+            if (col >= 0 && col < WORDS_PER_ROW && row >= 0 && row < CANVAS_HEIGHT) {
+                const wordIndex = row * WORDS_PER_ROW + col;
+                
+                if (wordIndex < MEMORY_SIZE) {
+                    // Convert address to octal (add leading zeros to make it 5 digits - max is 10000 octal for 4096 decimal)
+                    const octalAddress = wordIndex.toString(8).padStart(5, '0');
+                    
+                    // Get word value and convert to octal (18 bits = 6 octal digits max)
+                    const wordValue = memory[wordIndex] & 0x3FFFF; // Mask to 18 bits
+                    const octalValue = wordValue.toString(8).padStart(6, '0');
+                    
+                    hoverInfo.innerHTML = `Address: ${octalAddress}<br>Value: ${octalValue}`;
+                    hoverInfo.style.display = 'block';
+                    hoverInfo.style.left = (e.clientX + 15) + 'px';
+                    hoverInfo.style.top = (e.clientY + 15) + 'px';
+                }
+            }
+        });
+        
+        canvas.addEventListener('mouseleave', function() {
+            hoverInfo.style.display = 'none';
+        });
+    </script>
+</div>
+</body>
+</html>

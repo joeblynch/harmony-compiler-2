@@ -1,0 +1,31 @@
+{
+  "name": "pdp1-emulator",
+  "version": "1.0.0",
+  "description": "PDP-1 computer emulator written in TypeScript",
+  "main": "dist/pdp1.js",
+  "types": "dist/pdp1.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "rebuild": "npm run clean && npm run build",
+    "watch": "tsc --watch",
+    "start": "node dist/pdp1.js",
+    "dev": "npm run build && npm run start"
+  },
+  "keywords": [
+    "pdp1",
+    "emulator",
+    "computer",
+    "vintage",
+    "historical"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
