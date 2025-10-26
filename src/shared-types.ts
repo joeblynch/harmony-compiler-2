@@ -35,9 +35,14 @@ export interface PlaybackEndedMessage {
   type: 'playback-ended';
 }
 
+export interface RestartMessage {
+  type: 'restart';
+}
+
 export type PDP1AudioMessage =
   | InitPDP1Message
   | LogsMessage
   | CompiledMessage
   | LoadMusicMessage
-  | PlaybackEndedMessage;
+  | PlaybackEndedMessage
+  | RestartMessage;

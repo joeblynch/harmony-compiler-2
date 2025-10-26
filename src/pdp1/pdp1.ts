@@ -5,6 +5,7 @@ import { PDP1TapeReader } from './tape-reader';
 
 export class PDP1 {
   public breakpoint: number | null = -1;
+  public singleInstruction = false;
   
   public readonly memory: PDP1Memory;
   private readonly tapeReader: PDP1TapeReader;
@@ -80,7 +81,7 @@ export class PDP1 {
 
     do {
       duration += this.cpu.step();
-    } while (this.cpu.running && this.cpu.pc !== this.breakpoint);
+    } while (this.cpu.running && this.cpu.pc !== this.breakpoint && !this.singleInstruction);
 
     return duration;
   }

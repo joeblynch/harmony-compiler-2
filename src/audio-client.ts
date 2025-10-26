@@ -1,5 +1,5 @@
 import { musicTapes } from './music-tapes';
-import type { DataTape, InitPDP1Message, LoadMusicMessage, PDP1AudioMessage } from './shared-types';
+import type { DataTape, InitPDP1Message, LoadMusicMessage, RestartMessage, PDP1AudioMessage } from './shared-types';
 
 const MUSIC_PLAYER_TAPE = 'tapes/pdp1m13.rim';
 
@@ -7,6 +7,8 @@ export class AudioClient {
   private playButton = document.getElementById('play') as HTMLButtonElement;
   private audioContext: AudioContext | null = null;
   private pdp1Audio: AudioWorkletNode | null = null;
+  private playing = false;
+  private compiled = false;
 
   constructor() {
     this.playButton.addEventListener('click', this.onPlayButton);
@@ -19,6 +21,7 @@ export class AudioClient {
       if (audioContext.state === 'running') {
         audioContext.suspend();
         playButton.textContent = 'play';
+        this.playing = false;
         return;
       } else if (audioContext.state === 'suspended') {
         audioContext.resume();
@@ -29,6 +32,8 @@ export class AudioClient {
 
     // disable the button while we load the PDP-1 audio processor
     this.playButton.disabled = true;
+    this.playing = false;
+    this.compiled = false;
 
     this.audioContext = audioContext = new AudioContext();
 
@@ -59,10 +64,13 @@ export class AudioClient {
       case 'compiled':
         this.playButton.textContent = 'pause';
         this.playButton.disabled = false;
+        this.playing = true;
+        this.compiled = true;
         break;
       case 'playback-ended':
-        this.audioContext!.suspend;
+        this.audioContext!.suspend();
         this.playButton.textContent = 'play';
+        this.playing = false;
         break;
     }
   };

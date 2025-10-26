@@ -21,7 +21,6 @@ const JMP_PLA = 0o600000 | PLAY_MEMORY_ADDRESS;
 class PDP1AudioProcessor extends AudioWorkletProcessor {
   private readonly pdp1: PDP1 = new PDP1(PDP1_MEMORY_BANKS);
   private firstPlayback = true;
-  private musicTapeCompiled = false;
   private sampleDuration = 1 / globalThis.sampleRate * 1e6;
   private cpuRunDuration = 0;
   private nextSampleTime = 0;
@@ -40,31 +39,31 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
         case 'load-music':
           this.loadMusic(message.tape);
           break;
+
+        case 'restart':
+          this.restart();
+          break;
       }
     };
   }
 
+  get musicTapeCompiled() {
+    // program flag 6 indicates compilation
+    return this.pdp1.programFlags & 0o1;
+  }
+
   process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
-    if (!this.musicTapeCompiled) {
+    const { pdp1 } = this;
+
+    if (!this.musicTapeCompiled || !pdp1.running) {
       return true;
     }
-
-    const { pdp1 } = this;
-    // TODO: get restarting playback after song end to work
-    // if (!pdp1.running) {
-    //   // restart the music player back at the beginning of playback
-    //   pdp1.cpu.decodeAndExecute(JMP_PLA);
-    //   pdp1.cpu.running = true;
-    //   this.postLogs(['jmp pla']);
-    // }
 
     const leftChannel = outputs[0][0];
     const rightChannel = outputs[0][1];
 
-
-
     for (let i = 0; i < leftChannel.length && pdp1.running;) {
-      const duration = pdp1.cpu.step() / CHM_CPU_FACTOR;
+      const duration = pdp1.continue() / CHM_CPU_FACTOR;
       this.cpuRunDuration += duration;
       
       while (this.nextSampleTime <= this.cpuRunDuration && i < leftChannel.length) {
@@ -121,6 +120,8 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
       let logs: string[] = [];
       logs.push(`PDP-1 mem: 12K cpu: ${CHM_CPU_FACTOR * 100}% (CHM)`);
 
+      logs.push('# load music player');
+
       this.pdp1.address = 0o4;
       logs.push('address = 4');
       
@@ -141,25 +142,32 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
       const { pdp1 } = this;
       let logs: string[] = [];
 
+      // run normal until we start playback;
+      if (pdp1.singleInstruction) {
+        logs.push('single instruction = off');
+        pdp1.singleInstruction = false;
+      }
+
       if (!this.firstPlayback) {
         // clear prior tape data
+        logs.push('# clear prior song');
         pdp1.address = 0o700;
         logs.push('address = 700');
         pdp1.start();
         logs.push('start');
-
-        this.musicTapeCompiled = false;
       } else {
         this.firstPlayback = false;
       }
 
       // reset the start address if needed
       if (pdp1.address !== 0o4) {
+        logs.push('# resume normal operation');
         pdp1.address = 0o4;
         logs.push('address = 4');
       }
       
       // switch to read music tape mode
+      logs.push(`# read music tape (${tape.voices} voice${tape.voices > 1 ? 's' : ''})`);
       pdp1.setSenseSwitch(1, true);
       logs.push('sense switch 1 = on');
       
@@ -171,16 +179,18 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
         pdp1.start();
         logs.push('start');
       }
-      
-      // switch to music playback mode
-      pdp1.setSenseSwitch(1, false);
-      logs.push('sense switch 1 = off');
 
       // set the tempo before compiling if needed
       if (pdp1.testWord !== tape.tempo) {
+        logs.push('# set tempo');
         pdp1.testWord = tape.tempo;
         logs.push(`test word = ${tape.tempo.toString(8)}`);
       }
+
+      // switch to music playback mode
+      logs.push('# compile music');
+      pdp1.setSenseSwitch(1, false);
+      logs.push('sense switch 1 = off');
 
       // break at music playback, after compile completes
       pdp1.breakpoint = PLAY_MEMORY_ADDRESS;
@@ -190,18 +200,36 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
       logs.push('start');
       this.postLogs(logs);
       pdp1.start();
-      this.musicTapeCompiled = true;
+    
+      if (this.musicTapeCompiled) {
+        pdp1.breakpoint = null;
+        pdp1.singleInstruction = true;
 
-      pdp1.breakpoint = null;
-      this.postLogs([
-        'compile complete',
-        'breakpoint = null',
-      ]);
+        this.postLogs([
+          `break pc: ${pdp1.pc.toString(8)}`,
+          '# compiled, step instructions to sample audio',
+          'breakpoint = null',
+          'single instruction = on',
+        ]);
 
-      this.port.postMessage({ 'type': 'compiled', tapeURL: tape.url } as CompiledMessage);
+        this.port.postMessage({ 'type': 'compiled', tapeURL: tape.url } as CompiledMessage);
+      } else {
+        this.postLogs([`error: compilation failed`]);  
+      }
     } catch (ex: any) {
       this.postLogs([`error: ${ex.message}`]);
     }
+  }
+
+  private restart() {
+    const logs = ['# restart playback'];
+    if (this.pdp1.address !== 0o4) {
+      this.pdp1.address = 0o4;
+      logs.push('address = 4');
+    }
+    this.pdp1.start(0o4);
+    logs.push('start');
+    this.postLogs(logs);
   }
 
   private postLogs(logs: string[]) {
