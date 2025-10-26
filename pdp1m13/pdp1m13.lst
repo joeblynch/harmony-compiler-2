@@ -1,0 +1,1113 @@
+
+      /pdp-1 music 13                                                     Page 1
+
+
+    1                   /pdp-1 music 13
+    2                   /  050117...051206 (change to cxt 060330) (bumped nog 060525)
+    3                   /  061203 adj. to detuning, added sense switches 5, 6
+    4                   /  070417 minor changes
+    5                   /  080813 inverted sense switch 1
+    6                   /  plays from core banks 1...2
+    7                   /  (assumes compiled there)
+    8                   
+    9       000004      4/	repeat 4, opr
+      00004 760000
+      00005 760000
+      00006 760000
+      00007 760000
+   10 00010 601000      	jmp go
+   11       000011      11/
+   12 00011 642017      tuw,	642017	/detuning increments (3 bits each)
+   13 00012 100000      tpf,	100000	/tempo fudge factor
+   14 00013 005400      noe,	5400	/top of available mem (bank 1) if DDT present
+   15 00014 007776      nof,	7776	/top of available mem (each bank) if DDT absent
+   16 00015 000700      nog,	700	/bottom of avail. mem (banks 1, etc.)
+   17 00016 000000      npt,	0	/number of parts
+   18 00017 000000      top,	0	/top of available bank 0
+   19 00020 000000      f1,	0	/freq of first voice
+   20 00021 000000      f2,	0
+   21 00022 000000      f3,	0
+   22 00023 000000      f4,	0
+   23 00024 000000      sum,	0	/checksum
+   24 00025 000000      ib,	0	/tape buffer pointer
+   25 00026 000252      tpg,	252	/tempo factor from test word
+   26 00027 667377      tix,	scl 8s	/scale of detuning
+   27                   
+   28       000030      30/
+   29                   /multiply routine (assumes signed operands in AC, IO)
+   30                   / returns 34-bit product, 2 signs
+   31 00030 000000      mp2,	0
+   32 00031 000000      mpr,	0
+   33                   
+   34 00032 000000      mpy,	0
+   35 00033 260113      	dap mpx
+   36 00034 320031      	dio mpr
+   37 00035 760400      mps,	hlt	/skp for mul, skp i for mus
+   38 00036 600111      	jmp mpu
+   39 00037 200032      	lac mpy
+   40 00040 640200      	spa
+   41 00041 761000      	cma
+   42 00042 673777      	rcr 9s
+   43 00043 673777      	rcr 9s
+   44 00044 200031      mp1,	lac mpr
+   45 00045 640200      	spa
+   46 00046 761000      	cma
+   47 00047 240030      	dac mp2
+   48 00050 760200      	cla
+   49 00051 000030      	repeat 21, mus mp2
+UD undefined            	           ^
+      00052 000030
+      00053 000030
+      00054 000030
+
+      /pdp-1 music 13                                                     Page 2
+
+
+      00055 000030
+      00056 000030
+      00057 000030
+      00060 000030
+      00061 000030
+      00062 000030
+      00063 000030
+      00064 000030
+      00065 000030
+      00066 000030
+      00067 000030
+      00070 000030
+      00071 000030
+   50 00072 240030      	dac mp2
+   51 00073 200031      	lac mpr
+   52 00074 060032      	xor mpy
+   53 00075 640400      	sma
+   54 00076 600107      	jmp mp3
+   55 00077 200030      	lac mp2
+   56 00100 761000      	cma
+   57 00101 673777      	rcr 9s
+   58 00102 673777      	rcr 9s
+   59 00103 761000      	cma
+   60 00104 673777      	rcr 9s
+   61 00105 673777      	rcr 9s
+   62 00106 600113      	jmp mpx
+   63                   
+   64 00107 200030      mp3,	lac mp2
+   65 00110 600113      	jmp mpx
+   66                   
+   67 00111 200032      mpu,	lac mpy
+   68 00112 540031      	mul mpr
+   69 00113 600113      mpx,	jmp .
+   70                   
+   71                   /divide routine (assumes positive operands)
+   72                   / lac hi-dividend, lio lo-dividend, jda dvd, lac divisor,
+   73                   / overflow return, normal return (quot in AC, remdr in IO)
+   74 00114 000000      dv0,	0
+   75 00115 000000      dv1,	0
+   76 00116 000000      dv2,	0
+   77 00117 000000      dvd,	0
+   78 00120 260114      	dap dv0	/works extended
+   79 00121 110114      	xct i dv0
+   80 00122 240115      	dac dv1	/divisor
+   81 00123 440114      	idx dv0
+   82 00124 200117      	lac dvd
+   83 00125 760400      dvs,	hlt	/skp for div, skp i for dis
+   84 00126 600162      	jmp dvu
+   85 00127 420115      	sub dv1
+   86 00130 640400      	sma
+   87 00131 600171      	jmp dve	/if overflow
+   88 00132 000115      	repeat 22, dis dv1
+UD undefined            	           ^
+      00133 000115
+      00134 000115
+      00135 000115
+      00136 000115
+
+      /pdp-1 music 13                                                     Page 3
+
+
+      00137 000115
+      00140 000115
+      00141 000115
+      00142 000115
+      00143 000115
+      00144 000115
+      00145 000115
+      00146 000115
+      00147 000115
+      00150 000115
+      00151 000115
+      00152 000115
+      00153 000115
+   89 00154 400115      	add dv1
+   90 00155 320116      	dio dv2	/temp
+   91 00156 764000      	cli
+   92 00157 673001      	rcr 1s
+   93 00160 240117      	dac dvd
+   94 00161 600170      	jmp dvw
+   95                   
+   96 00162 560115      dvu,	div dv1
+   97 00163 610114      	jmp i dv0	/if overflow
+   98 00164 240116      	dac dv2
+   99 00165 440114      	idx dv0
+  100 00166 200116      	lac dv2
+  101 00167 610114      	jmp i dv0
+  102                   	
+  103 00170 440114      dvw,	idx dv0
+  104 00171 200116      dve,	lac dv2
+  105 00172 220117      	lio dvd
+  106 00173 610114      	jmp i dv0
+  107                   
+  108                   
+  109 00174 000000      f5,	0
+  110 00175 000000      f6,	0
+  111                   / jsp gfg to get flags 5, 6 from memory
+  112 00176 260206      gfg,	dap gfx
+  113 00177 760200      	cla
+  114 00200 760005      	clf 5
+  115 00201 520174      	sas f5
+  116 00202 760015      	stf 5
+  117 00203 760006      	clf 6
+  118 00204 520175      	sas f6
+  119 00205 760016      	stf 6
+  120 00206 600206      gfx,	jmp .
+  121                   
+  122                   
+  123 00207 000000      tw0,	0
+  124 00210 000000      tw1,	0
+  125 00211 000000      tw2,	0
+  126                   / jsp tun to set up detuned frequencies tab from pt, tuw
+  127 00212 260246      tun,	dap tux
+  128 00213 200011      	lac tuw	/detuning increments for each part
+  129 00214 240207      	dac tw0
+  130 00215 022243      	and (77
+  131 00216 671077      	rar 6s
+  132 00217 675077      	sar 6s
+
+      /pdp-1 music 13                                                     Page 4
+
+
+  133 00220 675037      	sar 5s	/overall detuning, twice scale of per-part
+  134 00221 240211      	dac tw2
+  135 00222 700000      tn1,	law tab
+  136 00223 260243      	dap to
+  137 00224 702137      tn2,	law pt
+  138 00225 260236      	dap ti
+  139 00226 760200      	cla
+  140 00227 220207      	lio tw0
+  141 00230 663007      	rcl 3s
+  142 00231 320207      	dio tw0
+  143 00232 422244      	sub (4	/offset of increment
+  144 00233 400211      	add tw2
+  145 00234 240210      	dac tw1
+  146 00235 760200      tl,	cla
+  147 00236 400236      ti,	add .
+  148 00237 220210      	lio tw1
+  149 00240 170032      	jda mpy	/multiply
+  150 00241 100027      	xct tix	/scale
+  151 00242 100236      	xct ti
+  152 00243 240243      to,	dac .
+  153 00244 440243      	idx to
+  154 00245 502245      	sad (dac tbe
+  155 00246 600246      tux,	jmp .	/exit
+  156 00247 440236      	idx ti
+  157 00250 522246      	sas (add pt+100
+  158 00251 600235      	jmp tl	/next pitch
+  159 00252 600224      	jmp tn2	/next voice
+  160                   
+  161                   
+  162 00253 000000      cb,	0	/compiler data
+  163 00254 000000      eb,	0	/end of current block
+  164 00255 000000      ij,	0	/voice number
+  165 00256 000000      off,	0	/offset of voice's notes
+  166                   
+  167       000003      t6=3		/tab right 6
+  168       000000      tab=t6*100	/detuned frequencies for voice 0...3
+  169       000400      tbe=tab+400
+  170                   
+  171       000003      nbk=3		/number of core banks
+  172                   
+  173                   / flags 5, 6:	meaning		Continue:	Start at 4:
+  174                   /	0, 0	pgm loaded	(none)		Read first voice
+  175                   /	1, 0	voice(s) read	Compile & play	Read subseq. voice
+  176                   /	1, 1	compiled	Play again	Read first voice
+  177                   
+  178       000700      700/
+  179                   		/come here on readin only
+  180 00700 760007      beg,	clf 7
+  181 00701 340174      	dzm f5	/nothing read in
+  182 00702 340175      	dzm f6	/nothing compiled
+  183 00703 621635      	jsp ini	/initialize pointers
+  184 00704 700010      	law 10
+  185 00705 764000      	cli
+  186 00706 542247      	mul (10	/which works, mul or mus?
+  187 00707 222250      	lio (skp
+  188 00710 640100      	sza	/0 in AC if mul
+
+      /pdp-1 music 13                                                     Page 5
+
+
+  189 00711 222251      	lio (skp i
+  190 00712 320035      	dio mps	/will skip for mus
+  191 00713 760200      	cla
+  192 00714 222252      	lio (200
+  193 00715 562247      	div (10	/which works, div or dis?
+  194 00716 760000      	opr
+  195 00717 222250      	lio (skp
+  196 00720 640200      	spa	/pos. in AC if div
+  197 00721 222251      	lio (skp i
+  198 00722 320125      	dio dvs	/will skip for dis
+  199 00723 340016      	dzm npt
+  200 00724 220025      stp,	lio ib	/where read up to
+  201 00725 640006      	szf 6
+  202 00726 220253      	lio cb	/where compiled up to
+  203 00727 200016      	lac npt	/number of parts read
+  204 00730 760400      	hlt
+  205 00731 724074      con,	eem
+  206 00732 620176      	jsp gfg	/set flags from memory
+  207 00733 650005      	szf i 5	/come here on Continue	
+  208 00734 600724      	jmp stp	/if nothing to play
+  209 00735 640020      	szs 20	/switch 2 says recompile
+  210 00736 760006      	clf 6
+  211 00737 650006      	szf i 6
+  212 00740 621136      	jsp cpl	/compile (set flag 6 if successful)
+  213 00741 340175      	dzm f6
+  214 00742 640006      	szf 6
+  215 00743 440175      	idx f6
+  216 00744 650006      	szf i 6
+  217 00745 600724      	jmp stp
+  218 00746 620212      	jsp tun
+  219 00747 601671      	jmp pla	/if something to play
+  220                   
+  221                   b,		/bar pointer
+  222       000754      b+4/
+  223                   n,		/note pointer
+  224       000760      n+4/
+  225                   t,		/time left in note (192 * 8)
+  226       000764      t+4/
+  227                   a,		/time left in artic (192 * 8)
+  228       000770      a+4/
+  229                   p,		/pitch
+  230       000774      p+4/
+  231                   
+  232       001000      1000/
+  233                   		/set test address to here
+  234 01000 650010      go,	szs i 10	/come here on Start
+  235 01001 600731      	jmp con	/switch 1 to read tape
+  236 01002 724074      	eem
+  237 01003 620176      	jsp gfg	/get flags from memory
+  238 01004 640006      	szf 6
+  239 01005 760005      	clf 5
+  240 01006 340174      	dzm f5
+  241 01007 640005      	szf 5
+  242 01010 440174      	idx f5
+  243 01011 760006      	clf 6
+  244 01012 340175      	dzm f6
+  245 01013 640005      	szf 5
+
+      /pdp-1 music 13                                                     Page 6
+
+
+  246 01014 601024      	jmp rdp	/read a voice
+  247                   / here to initialize all voices
+  248 01015 621635      rdi,	jsp ini	/initialize pointers
+  249 01016 340016      	dzm npt
+  250 01017 340255      	dzm ij	/start with voice 0
+  251 01020 340750      	dzm b
+  252 01021 340751      	dzm b+1
+  253 01022 340752      	dzm b+2
+  254 01023 340753      	dzm b+3
+  255                   
+  256                   / here to read a voice
+  257 01024 200014      rdp,	lac nof	/use all bank 0
+  258 01025 640030      	szs 30
+  259 01026 200013      	lac noe	/leave room for DDT
+  260 01027 240017      	dac top
+  261 01030 710004      	law i 4
+  262 01031 400255      	add ij
+  263 01032 640400      	sma
+  264 01033 600724      	jmp stp	/nope, we're full
+  265 01034 621114      	jsp rdg
+  266 01035 200025      	lac ib
+  267 01036 240256      	dac off
+  268 01037 730002      rd1,	rpb	/a note
+  269 01040 330025      	dio i ib
+  270 01041 210025      	lac i ib
+  271 01042 400024      	add sum
+  272 01043 240024      	dac sum
+  273 01044 440025      	idx ib
+  274 01045 500017      	sad top
+  275 01046 760400      	hlt	/too much data
+  276 01047 461664      	isp ct
+  277 01050 601037      	jmp rd1
+  278 01051 730002      	rpb	/checksum
+  279 01052 321664      	dio ct
+  280 01053 200024      	lac sum
+  281 01054 521664      	sas ct
+  282 01055 760400      	hlt	/checksum error
+  283 01056 621114      rdm,	jsp rdg
+  284 01057 700750      	law b
+  285 01060 400255      	add ij
+  286 01061 261063      	dap rd2
+  287 01062 200025      	lac ib
+  288 01063 241063      rd2,	dac .	/b(ij)
+  289 01064 730002      rd3,	rpb	/a bar pointer
+  290 01065 330025      	dio i ib
+  291 01066 210025      	lac i ib
+  292 01067 400024      	add sum
+  293 01070 240024      	dac sum
+  294 01071 210025      	lac i ib
+  295 01072 640400      	sma
+  296 01073 400256      	add off
+  297 01074 250025      	dac i ib
+  298 01075 440025      	idx ib
+  299 01076 500017      	sad top
+  300 01077 760400      	hlt	/too much data
+  301 01100 461664      	isp ct
+  302 01101 601064      	jmp rd3
+
+      /pdp-1 music 13                                                     Page 7
+
+
+  303 01102 730002      	rpb	/checksum
+  304 01103 321664      	dio ct
+  305 01104 200024      	lac sum
+  306 01105 521664      	sas ct
+  307 01106 760400      	hlt	/checksum error
+  308 01107 440255      	idx ij	/ready for next voice
+  309 01110 760015      	stf 5	/got some data
+  310 01111 440174      	idx f5
+  311 01112 440016      	idx npt	/count the part
+  312 01113 600724      	jmp stp
+  313                   
+  314                   / jsp rdg to set up to read a section
+  315 01114 261126      rdg,	dap rgx
+  316 01115 730002      	rpb
+  317 01116 321664      	dio ct	/note count
+  318 01117 201664      	lac ct
+  319 01120 640400      	sma
+  320 01121 650100      	sza i
+  321 01122 760400      	hlt	/count too small
+  322 01123 761000      	cma
+  323 01124 241664      	dac ct
+  324 01125 340024      	dzm sum
+  325 01126 601126      rgx,	jmp .
+  326                   
+  327 01127 000000      pit,	0	/pitch
+  328 01130 000000      tem,	0
+  329 01131 000000      tpx,	0	/max fract for tempo
+  330 01132 000000      tpm,	0	/tempo multiplier
+  331 01133 000000      min,	0	/min fract
+  332 01134 000000      mn2,	0	/min loopct / 2
+  333 01135 000000      ceb,	0
+  334                   
+  335                   / jsp cpl to compile
+  336 01136 261316      cpl,	dap cpx
+  337 01137 202253      	lac (clf 2
+  338 01140 222254      	lio (stf 2
+  339 01141 242027      	dac p2c
+  340 01142 242056      	dac p2d
+  341 01143 242035      	dac p3c
+  342 01144 242064      	dac p3d
+  343 01145 242105      	dac p3e
+  344 01146 322077      	dio p2s
+  345 01147 322120      	dio p3s
+  346 01150 202255      	lac (clf 3
+  347 01151 222256      	lio (stf 3
+  348 01152 640050      	szs 50	/switch 5 swaps alto, tenor
+  349 01153 601161      	jmp cp1
+  350 01154 242035      	dac p3c
+  351 01155 242064      	dac p3d
+  352 01156 242105      	dac p3e
+  353 01157 322120      	dio p3s
+  354 01160 601164      	jmp cp0
+  355                   
+  356 01161 242027      cp1,	dac p2c
+  357 01162 242056      	dac p2d
+  358 01163 322077      	dio p2s
+  359 01164 202257      cp0,	lac (10000
+
+      /pdp-1 music 13                                                     Page 8
+
+
+  360 01165 400015      	add nog
+  361 01166 240253      	dac cb
+  362 01167 200750      	lac b
+  363 01170 242237      	dac sb
+  364 01171 200751      	lac b+1
+  365 01172 242240      	dac sb+1
+  366 01173 200752      	lac b+2
+  367 01174 242241      	dac sb+2
+  368 01175 200753      	lac b+3
+  369 01176 242242      	dac sb+3
+  370 01177 702260      	law (600000
+  371 01200 240754      	dac n	/prime the pump
+  372 01201 240755      	dac n+1
+  373 01202 240756      	dac n+2
+  374 01203 240757      	dac n+3
+  375 01204 762200      	lat	/test word contain tempo?
+  376 01205 241130      	dac tem
+  377 01206 422261      	sub (1400
+  378 01207 640400      	sma
+  379 01210 601216      	jmp cp2	/if too big
+  380 01211 402262      	add (1340
+  381 01212 640200      	spa
+  382 01213 601216      	jmp cp2	/if too small
+  383 01214 201130      	lac tem
+  384 01215 601217      	jmp cp3
+  385 01216 700252      cp2,	law 252	/default, 170.
+  386 01217 240026      cp3,	dac tpg	/save tempo value from test word
+  387 01220 700252      	law 252
+  388 01221 171606      	jda tpo	/set tempo
+  389 01222 200014      	lac nof
+  390 01223 400253      	add cb
+  391 01224 420015      	sub nog
+  392 01225 240254      	dac eb
+  393 01226 202260      ca,	lac (600000	/are all voices at bar line?
+  394 01227 510754      	sad i n
+  395 01230 530755      	sas i n+1
+  396 01231 601317      	jmp cc
+  397 01232 510756      	sad i n+2
+  398 01233 530757      	sas i n+3
+  399 01234 601317      	jmp cc
+  400                   	/ here to advance to next measure
+  401 01235 700760      	law t
+  402 01236 261237      	dap ca0
+  403 01237 341237      ca0,	dzm .
+  404 01240 441237      	idx ca0
+  405 01241 522263      	sas (dzm a+4
+  406 01242 601237      	jmp ca0
+  407                   	
+  408 01243 340255      	dzm ij
+  409 01244 700750      ca1,	law b
+  410 01245 400255      	add ij
+  411 01246 261252      	dap ca2
+  412 01247 261263      	dap ca4
+  413 01250 402244      	add (n-b
+  414 01251 261261      	dap ca3
+  415 01252 201252      ca2,	lac .	/get bar ptr
+  416 01253 650100      	sza i
+
+      /pdp-1 music 13                                                     Page 9
+
+
+  417 01254 601264      	jmp ca9	/if voice is over
+  418 01255 241130      	dac tem
+  419 01256 211130      	lac i tem
+  420 01257 502260      	sad (600000
+  421 01260 601264      	jmp ca9	/if voice is over
+  422 01261 241261      ca3,	dac .	/put note ptr
+  423 01262 522260      	sas (600000
+  424 01263 441263      ca4,	idx .	/advance bar ptr
+  425 01264 440255      ca9,	idx ij
+  426 01265 522244      	sas (4
+  427 01266 601244      	jmp ca1
+  428                   
+  429 01267 202260      	lac (600000
+  430 01270 510754      	sad i n
+  431 01271 530755      	sas i n+1
+  432 01272 601317      	jmp cc
+  433 01273 510756      	sad i n+2
+  434 01274 530757      	sas i n+3
+  435 01275 601317      	jmp cc
+  436                   	/ here if all done
+  437 01276 202237      	lac sb
+  438 01277 240750      	dac b
+  439 01300 202240      	lac sb+1
+  440 01301 240751      	dac b+1
+  441 01302 202241      	lac sb+2
+  442 01303 240752      	dac b+2
+  443 01304 202242      	lac sb+3
+  444 01305 240753      	dac b+3
+  445 01306 202257      	lac (10000
+  446 01307 400015      	add nog
+  447 01310 520253      	sas cb
+  448 01311 760016      	stf 6	/set flag if successful
+  449 01312 764000      	cli
+  450 01313 621644      	jsp put	/0, 0, 0
+  451 01314 764000      	cli
+  452 01315 621644      	jsp put	/0, 0
+  453 01316 601316      cpx,	jmp .	/exit
+  454                   
+  455                   	/ here to compile a segment
+  456 01317 340255      cc,	dzm ij
+  457 01320 202264      	lac (177700
+  458 01321 241133      	dac min
+  459 01322 341135      	dzm ceb	/count end bars
+  460                   	/ find minimum time
+  461 01323 700750      cc1,	law b
+  462 01324 400255      	add ij
+  463                   	/dap c0b
+  464                   	/dap c1b
+  465 01325 402244      	add (n-b
+  466 01326 261346      	dap c0n
+  467 01327 261355      	dap c1n
+  468 01330 402244      	add (t-n
+  469 01331 261340      	dap c0t
+  470 01332 261441      	dap c1t
+  471 01333 402244      	add (a-t
+  472 01334 261343      	dap c0a
+  473 01335 261434      	dap c1a
+
+      /pdp-1 music 13                                                    Page 10
+
+
+  474 01336 402244      	add (p-a
+  475 01337 261410      	dap c0p
+  476 01340 201340      c0t,	lac .	/time left in note
+  477 01341 640100      	sza
+  478 01342 601472      	jmp cc2
+  479 01343 201343      c0a,	lac .	/time left in artic
+  480 01344 640100      	sza
+  481 01345 601472      	jmp cc2
+  482                   	/ need a new note
+  483 01346 211346      c0n,	lac i .	/get note
+  484 01347 022265      	and (700000
+  485 01350 522265      	sas (700000
+  486 01351 601357      	jmp c9c
+  487 01352 101346      	xct c0n	/get note
+  488 01353 022266      	and (77777
+  489 01354 171606      	jda tpo	/set tempo
+  490 01355 441355      c1n,	idx .	/advance note ptr
+  491 01356 601346      	jmp c0n
+  492                   
+  493 01357 101346      c9c,	xct c0n	/get note
+  494 01360 522260      	sas (600000
+  495 01361 601370      	jmp cc3	/it's really a note
+  496 01362 441135      	idx ceb	/it's a bar line
+  497 01363 760200      	cla
+  498 01364 101441      	xct c1t	/0 to note time
+  499 01365 101434      	xct c1a	/0 to artic time
+  500 01366 101410      	xct c0p	/0 to pitch
+  501 01367 601472      	jmp cc2	/with 0 as time
+  502                   
+  503 01370 663777      cc3,	rcl 9s
+  504 01371 663777      	rcl 9s	/note to IO
+  505 01372 101355      	xct c1n	/advance note ptr
+  506 01373 760200      	cla
+  507 01374 663003      	rcl 2s	/articulation bits
+  508 01375 760006      	clf 6
+  509 01376 642000      	spi
+  510 01377 760016      	stf 6	/triplet
+  511 01400 662001      	ril 1s
+  512 01401 663003      	rcl 2s	/rest of articulation bits
+  513 01402 402267      	add (cxt
+  514 01403 261431      	dap c0x	/articulation
+  515 01404 760200      	cla
+  516 01405 663077      	rcl 6s	/pitch
+  517 01406 502270      	sad (1
+  518 01407 760200      	cla	/1 is a rest too
+  519 01410 241410      c0p,	dac .	/put pitch
+  520 01411 640100      	sza
+  521 01412 601415      	jmp cca
+  522 01413 702271      	law (cla
+  523 01414 261431      	dap c0x	/don't split a rest
+  524 01415 760200      cca,	cla
+  525 01416 663177      	rcl 7s	/get dur in 64ths
+  526 01417 241130      	dac tem
+  527 01420 665001      	sal 1s
+  528 01421 650006      	szf i 6	/triplet?
+  529 01422 401130      	add tem
+  530 01423 760006      	clf 6	/now have dur in 192nds
+
+      /pdp-1 music 13                                                    Page 11
+
+
+  531 01424 665007      	sal 3s	/allow for precise artic
+  532 01425 640400      	sma
+  533 01426 650100      	sza i
+  534 01427 601346      	jmp c0n	/if no time there
+  535 01430 241130      	dac tem
+  536 01431 101431      c0x,	xct .	/compute time of artic
+  537 01432 640200      	spa
+  538 01433 760200      	cla
+  539 01434 241434      c1a,	dac .	/put artic time
+  540 01435 761000      	cma
+  541 01436 401130      	add tem
+  542 01437 640200      	spa
+  543 01440 760200      	cla
+  544 01441 241441      c1t,	dac .	/put note time
+  545 01442 601340      	jmp c0t
+  546                   
+  547 01443 675007      cxt,	sar 3s	/e
+  548 01444 675003      	sar 2s	/q
+  549 01445 675001      	sar 1s	/h
+  550 01446 760400      	hlt
+  551 01447 171463      	jda c58	/s
+  552 01450 760400      	hlt
+  553 01451 760400      	hlt
+  554 01452 760400      	hlt
+  555 01453 760200      	cla	/l
+  556 01454 760400      	hlt
+  557 01455 760400      	hlt
+  558 01456 760400      	hlt
+  559 01457 760400      	hlt	/bar line
+  560 01460 760400      	hlt
+  561 01461 760400      	hlt
+  562 01462 760400      	hlt
+  563                   
+  564 01463 000000      c58,	0
+  565 01464 261471      	dap c5x
+  566 01465 201463      	lac c58
+  567 01466 675003      	sar 2s
+  568 01467 401463      	add c58
+  569 01470 675001      	sar 1s
+  570 01471 601471      c5x,	jmp .
+  571                   
+  572 01472 650100      cc2,	sza i
+  573 01473 601501      	jmp cc5	/0 doesn't count
+  574 01474 421133      	sub min
+  575 01475 640400      	sma
+  576 01476 601501      	jmp cc5	/> min doesn't count
+  577 01477 401133      	add min
+  578 01500 241133      	dac min
+  579 01501 440255      cc5,	idx ij
+  580 01502 522244      	sas (4
+  581 01503 601323      	jmp cc1
+  582 01504 201131      	lac tpx
+  583 01505 421133      	sub min
+  584 01506 640400      	sma
+  585 01507 601512      	jmp cc6
+  586 01510 401133      	add min
+  587 01511 241133      	dac min	/min 192nds * 8
+
+      /pdp-1 music 13                                                    Page 12
+
+
+  588 01512 201133      cc6,	lac min
+  589 01513 221132      	lio tpm
+  590 01514 170032      	jda mpy	/multiply
+  591 01515 667377      	scl 8s
+  592 01516 241134      	dac mn2	/loop ct / 2
+  593                   
+  594 01517 700004      	law 4
+  595 01520 501135      	sad ceb
+  596 01521 601226      	jmp ca	/all at bar line
+  597 01522 710001      	law i 1	/2 loops for combo fetch
+  598 01523 401134      	add mn2
+  599 01524 241134      	dac mn2
+  600 01525 640400      	sma
+  601 01526 650100      	sza i
+  602 01527 601317      	jmp cc	/no time there
+  603                   	/ here to form segment
+  604 01530 200760      cc4,	lac t
+  605 01531 640100      	sza	/no time = rest
+  606 01532 200770      	lac p	/pitch
+  607 01533 671077      	rar 6s
+  608 01534 663077      	rcl 6s
+  609 01535 200761      	lac t+1
+  610 01536 640100      	sza
+  611 01537 200771      	lac p+1
+  612 01540 671077      	rar 6s
+  613 01541 663077      	rcl 6s
+  614 01542 200762      	lac t+2
+  615 01543 640100      	sza
+  616 01544 200772      	lac p+2
+  617 01545 671077      	rar 6s
+  618 01546 663077      	rcl 6s
+  619 01547 621644      	jsp put	/pitch, pitch, pitch
+  620 01550 200763      	lac t+3
+  621 01551 640100      	sza
+  622 01552 200773      	lac p+3
+  623 01553 673077      c4m,	rcr 6s	/pitch to IO
+  624 01554 201134      	lac mn2
+  625 01555 673077      	rcr 6s
+  626 01556 673077      	rcr 6s
+  627 01557 621644      	jsp put	/time, pitch
+  628                   
+  629 01560 340255      c4n,	dzm ij
+  630 01561 700760      c4o,	law t
+  631 01562 400255      	add ij
+  632 01563 261570      	dap c4p
+  633 01564 261601      	dap c4q
+  634 01565 402244      	add (a-t
+  635 01566 261574      	dap c4r
+  636 01567 261577      	dap c4s
+  637 01570 201570      c4p,	lac .	/lac t...
+  638 01571 421133      	sub min
+  639 01572 640400      	sma
+  640 01573 601601      	jmp c4q
+  641 01574 201574      c4r,	lac .	/lac a...
+  642 01575 421133      	sub min
+  643 01576 640400      	sma
+  644 01577 241577      c4s,	dac .	/dac a...
+
+      /pdp-1 music 13                                                    Page 13
+
+
+  645 01600 601602      	jmp c4x
+  646                   
+  647 01601 241601      c4q,	dac .	/dac t...
+  648 01602 440255      c4x,	idx ij
+  649 01603 522244      	sas (4
+  650 01604 601561      	jmp c4o
+  651 01605 601317      	jmp cc
+  652                   
+  653                   / jda tpo to set tempo from AC
+  654 01606 000000      tpo,	0
+  655 01607 261634      	dap stx
+  656 01610 201606      	lac tpo
+  657 01611 220026      	lio tpg	/1st factor: from TW
+  658 01612 170032      	jda mpy
+  659 01613 170117      	jda dvd
+  660 01614 700252      	 law 252
+  661 01615 760400      	hlt	/if overflow
+  662 01616 220012      	lio tpf	/2nd factor: location 12
+  663 01617 170032      	jda mpy	/multiply
+  664 01620 667037      	scl 5s
+  665 01621 222272      	lio (1131
+  666 01622 170032      	jda mpy
+  667 01623 667777      	scl 9s
+  668 01624 241132      	dac tpm
+  669 01625 760200      	cla
+  670 01626 222273      	lio (17760	/7770 and a null bit
+  671 01627 663777      	rcl 9s
+  672 01630 170117      	jda dvd
+  673 01631 201132      	 lac tpm
+  674 01632 760400      	hlt	/if overflow
+  675 01633 241131      	dac tpx
+  676 01634 601634      stx,	jmp .
+  677                   
+  678                   / jsp ini to initialize pointers
+  679 01635 261643      ini,	dap inx
+  680 01636 202257      	lac (10000
+  681 01637 400015      	add nog
+  682 01640 240253      	dac cb
+  683 01641 702304      	law not
+  684 01642 240025      	dac ib
+  685 01643 601643      inx,	jmp .
+  686                   
+  687                   / jsp put to put IO in compiled area
+  688 01644 261650      put,	dap pux
+  689 01645 330253      	dio i cb
+  690 01646 440253      	idx cb
+  691 01647 520254      	sas eb
+  692 01650 601650      pux,	jmp .	/exit
+  693 01651 402257      	add (10000
+  694 01652 420014      	sub nof
+  695 01653 400015      	add nog
+  696 01654 240253      	dac cb
+  697 01655 420015      	sub nog
+  698 01656 502274      	sad (nbk*10000
+IC in expression        	        ^
+  699 01657 601316      	jmp cpx	/full, fail
+  700 01660 400014      	add nof
+
+      /pdp-1 music 13                                                    Page 14
+
+
+  701 01661 240254      	dac eb
+  702 01662 601650      	jmp pux
+  703                   
+  704 01663 000000      ptr,	0	/player fetch pointer
+  705 01664 000000      ct,	0	/loop count
+  706 01665 000000      hop,	0	/step from end of one bank to start of next
+  707 01666 000000      gap,	0	/step from start of bank to end
+  708                   
+  709 01667 650060      plq,	szs i 60	/ loop play on switch 6
+  710 01670 600724      	jmp stp
+  711                   / jmp pla to play (jmps back to stp when done)
+  712 01671 202257      pla,	lac (10000
+  713 01672 400015      	add nog
+  714 01673 500253      	sad cb	/where compiler put last data
+  715 01674 600724      	jmp stp	/if no real music there
+  716 01675 241663      	dac ptr
+  717 01676 400014      	add nof
+  718 01677 420015      	sub nog
+  719 01700 240254      	dac eb	/end of block
+  720 01701 202257      	lac (10000
+  721 01702 420014      	sub nof
+  722 01703 400015      	add nog
+  723 01704 241665      	dac hop
+  724 01705 200014      	lac nof
+  725 01706 420015      	sub nog
+  726 01707 241666      	dac gap
+  727 01710 760200      	cla
+  728 01711 240020      	dac f1
+  729 01712 240021      	dac f2
+  730 01713 240022      	dac f3
+  731 01714 240023      	dac f4
+  732 01715 601740      	jmp nxt
+  733                   
+  734                   xbk,	/ here to advance to next core bank (ptr in AC)
+  735 01716 401665      	add hop
+  736 01717 241663      	dac ptr
+  737 01720 401666      	add gap
+  738 01721 240254      	dac eb
+  739 01722 200020      	lac f1
+  740 01723 402047      	add p1
+  741 01724 242047      	dac p1
+  742 01725 200021      	lac f2
+  743 01726 402076      	add p2
+  744 01727 242076      	dac p2
+  745 01730 200022      	lac f3
+  746 01731 402117      	add p3
+  747 01732 242117      	dac p3
+  748 01733 200023      	lac f4
+  749 01734 402132      	add p4
+  750 01735 242132      	dac p4
+  751 01736 760000      	nop	/with a cycle to spare!
+  752 01737 602014      	jmp lup
+  753                   
+  754                   nxt,	/ here to get next note
+  755 01740 231663      	lio i ptr
+  756 01741 700003      	law t6
+  757 01742 663077      	rcl 6s
+
+      /pdp-1 music 13                                                    Page 15
+
+
+  758 01743 261744      	dap .+1
+  759 01744 201744      	lac .
+  760 01745 240020      	dac f1
+  761 01746 665001      	sal 1s
+  762 01747 402047      	add p1
+  763 01750 242047      	dac p1
+  764 01751 700004      	law t6+1
+  765 01752 663077      	rcl 6s
+  766 01753 261754      	dap .+1
+  767 01754 201754      	lac .
+  768 01755 240021      	dac f2
+  769 01756 665001      	sal 1s
+  770 01757 402076      	add p2
+  771 01760 242076      	dac p2
+  772 01761 700005      	law t6+2
+  773 01762 663077      	rcl 6s
+  774 01763 261764      	dap .+1
+  775 01764 201764      	lac .
+  776 01765 240022      	dac f3
+  777 01766 665001      	sal 1s
+  778 01767 402117      	add p3
+  779 01770 242117      	dac p3
+  780 01771 441663      	idx ptr
+  781                   		/0 in IO
+  782 01772 211663      	lac i ptr	/loopct/2, pitch
+  783 01773 673077      	rcr 6s
+  784 01774 650100      	sza i
+  785 01775 601667      	jmp plq	/the end
+  786 01776 665001      	sal 1s	/(loopct/2) * 2
+  787 01777 761000      	cma
+  788 02000 241664      	dac ct
+  789 02001 700006      	law t6+3
+  790 02002 663077      	rcl 6s
+  791 02003 262004      	dap .+1
+  792 02004 202004      	lac .
+  793 02005 240023      	dac f4
+  794 02006 665001      	sal 1s
+  795 02007 402132      	add p4
+  796 02010 242132      	dac p4
+  797 02011 441663      	idx ptr
+  798 02012 500254      	sad eb
+  799 02013 601716      	jmp xbk	/if to next core bank
+  800                   
+  801                   / fall into playing loop
+  802 02014 200020      lup,	lac f1
+  803 02015 402047      	add p1
+  804 02016 640200      	spa
+  805 02017 172047      	jda p1
+  806 02020 242047      	dac p1
+  807 02021 760001      	clf 1
+  808 02022 200021      	lac f2
+  809 02023 402076      	add p2
+  810 02024 640200      	spa
+  811 02025 172076      	jda p2
+  812 02026 242076      	dac p2
+  813 02027 760002      p2c,	clf 2
+  814 02030 200022      	lac f3
+
+      /pdp-1 music 13                                                    Page 16
+
+
+  815 02031 402117      	add p3
+  816 02032 640200      	spa
+  817 02033 172117      	jda p3
+  818 02034 242117      	dac p3
+  819 02035 760003      p3c,	clf 3
+  820 02036 200023      	lac f4
+  821 02037 402132      	add p4
+  822 02040 640200      	spa
+  823 02041 172132      	jda p4
+  824 02042 242132      	dac p4
+  825 02043 760004      	clf 4
+  826 02044 461664      	isp ct
+  827 02045 602014      	jmp lup
+  828 02046 601740      	jmp nxt
+  829                   
+  830 02047 000000      p1,	0
+  831 02050 760011      	stf 1
+  832 02051 200021      	lac f2
+  833 02052 402076      	add p2
+  834 02053 640200      	spa
+  835 02054 172076      	jda p2
+  836 02055 242076      	dac p2
+  837 02056 760002      p2d,	clf 2
+  838 02057 200022      	lac f3
+  839 02060 402117      	add p3
+  840 02061 640200      	spa
+  841 02062 172117      	jda p3
+  842 02063 242117      	dac p3
+  843 02064 760003      p3d,	clf 3
+  844 02065 200023      	lac f4
+  845 02066 402132      	add p4
+  846 02067 640200      	spa
+  847 02070 172132      	jda p4
+  848 02071 242132      	dac p4
+  849 02072 760004      	clf 4
+  850 02073 461664      	isp ct
+  851 02074 602014      	jmp lup
+  852 02075 601740      	jmp nxt
+  853                   
+  854 02076 000000      p2,	0
+  855 02077 760012      p2s,	stf 2
+  856 02100 200022      	lac f3
+  857 02101 402117      	add p3
+  858 02102 640200      	spa
+  859 02103 172117      	jda p3
+  860 02104 242117      	dac p3
+  861 02105 760003      p3e,	clf 3
+  862 02106 200023      	lac f4
+  863 02107 402132      	add p4
+  864 02110 640200      	spa
+  865 02111 172132      	jda p4
+  866 02112 242132      	dac p4
+  867 02113 760004      	clf 4
+  868 02114 461664      	isp ct
+  869 02115 602014      	jmp lup
+  870 02116 601740      	jmp nxt
+  871                   
+
+      /pdp-1 music 13                                                    Page 17
+
+
+  872 02117 000000      p3,	0
+  873 02120 760013      p3s,	stf 3
+  874 02121 200023      	lac f4
+  875 02122 402132      	add p4
+  876 02123 640200      	spa
+  877 02124 172132      	jda p4
+  878 02125 242132      	dac p4
+  879 02126 760004      	clf 4
+  880 02127 461664      	isp ct
+  881 02130 602014      	jmp lup
+  882 02131 601740      	jmp nxt
+  883                   
+  884 02132 000000      p4,	0
+  885 02133 760014      	stf 4
+  886 02134 461664      	isp ct
+  887 02135 602014      	jmp lup
+  888 02136 601740      	jmp nxt
+  889                   
+  890                   / equal-tempered frequencies, assuming 175 microsec loop
+  891                   pt,	decimal
+  892 02137 000000      	0				/rest
+  893                   	/1337				/as0
+  894 02140 002610      	1416				/b0
+  895 02141 002734      	1500	1589	1684		/c1, cs1, d1
+      02142 003065
+      02143 003224
+  896 02144 003370      	1784	1890	2003	2122	/ds1, e1, f1, fs1
+      02145 003542
+      02146 003723
+      02147 004112
+  897 02150 004310      	2248	2382	2523	2673	/g1, gs1, a1, as1
+      02151 004516
+      02152 004733
+      02153 005161
+  898 02154 005420      	2832	3001	3179	3368	/b1, c2, cs2, d2
+      02155 005671
+      02156 006153
+      02157 006450
+  899 02160 006760      	3568	3780	4005	4243	/ds2, e2, f2, fs2
+      02161 007304
+      02162 007645
+      02163 010223
+  900 02164 010620      	4496	4763	5046	5346	/g2, gs2, a2, as2
+      02165 011233
+      02166 011666
+      02167 012342
+  901 02170 013040      	5664	6001	6358	6736	/b2, c3, cs3, d3
+      02171 013561
+      02172 014326
+      02173 015120
+  902 02174 015740      	7136	7561	8010	8487	/ds3, e3, f3, fs3
+      02175 016611
+      02176 017512
+      02177 020447
+  903 02200 021437      	8991	9526	10092	10693	/g3, gs3, a3, as3
+      02201 022466
+      02202 023554
+
+      /pdp-1 music 13                                                    Page 18
+
+
+      02203 024705
+  904 02204 026100      	11328	12002	12716	13472	/b3, c4, cs4, d4
+      02205 027342
+      02206 030654
+      02207 032240
+  905 02210 033701      	14273	15122	16021	16973	/ds4, e4, f4, fs4
+      02211 035422
+      02212 037225
+      02213 041115
+  906 02214 043077      	17983	19052	20185	21385	/g4, gs4, a4, as4
+      02215 045154
+      02216 047331
+      02217 051611
+  907 02220 054201      	22657	24004	25432	26944	/b4, c5, cs5, d5
+      02221 056704
+      02222 061530
+      02223 064500
+  908 02224 067602      	28546	30243	32042	33947	/ds5, e5, f5, fs5
+      02225 073043
+      02226 076452
+      02227 102233
+  909 02230 106176      	35966	38104	40370	42771	/g5, gs5, a5, as5
+      02231 112330
+      02232 116662
+      02233 123423
+  910 02234 130402      	45314	48008			/b5, c6
+      02235 135610
+  911 02236 143257      	50863				/cs6
+  912                   	/53887				/d6
+  913                   
+  914                   octal
+  915                   
+  916                   sb,
+  917       002243      sb+4/
+  918                   
+  919       002243      consta
+  920                   
+  921       002304      not=.-20	/notes & bars (tape buffer area)
+  922                   
+  923       000700      start beg
+  924                   
+      02243 000077
+      02244 000004
+      02245 240400
+      02246 402237
+      02247 000010
+      02250 640000
+      02251 650000
+      02252 000200
+      02253 760002
+      02254 760012
+      02255 760003
+      02256 760013
+      02257 010000
+      02260 600000
+      02261 001400
+      02262 001340
+
+      /pdp-1 music 13                                                    Page 19
+
+
+      02263 340770
+      02264 177700
+      02265 700000
+      02266 077777
+      02267 001443
+      02270 000001
+      02271 760200
+      02272 001131
+      02273 017760
+      02274 000000
+
+      4 detected errors
