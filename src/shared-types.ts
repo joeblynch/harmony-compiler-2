@@ -47,6 +47,11 @@ export interface StoppedMessage {
   type: 'stopped';
 }
 
+export interface FrameUpdateMessage {
+  type: 'frame-update';
+  pfDutyCycle: number[];
+}
+
 export type PDP1AudioMessage =
   | InitPDP1Message
   | LogsMessage
@@ -55,4 +60,5 @@ export type PDP1AudioMessage =
   | PlaybackEndedMessage
   | RestartMessage
   | StopMessage
-  | StoppedMessage;
+  | StoppedMessage
+  | FrameUpdateMessage;

@@ -58,7 +58,7 @@
         cursor: default;
       }
 
-      .program-flags {
+      #program-flags {
         display: flex;
         flex-direction: row;
         gap: 6px;
@@ -76,16 +76,18 @@
       }
 
       .bulb {
-        background-color: #f2ba58;
+        background-color: #f2ea58;
+        box-shadow: inset 0 0 2px 5px #f2ba58;
         opacity: 0;
         will-change: opacity;
+        transition: opacity 64ms;
       }
     </style>
   </head>
   <body>
     <div id="root">
       <button id="play" disabled>play</button>
-      <div class="program-flags">
+      <div id="program-flags">
         <div class="bulb-container"><div class="bulb"></div></div>
         <div class="bulb-container"><div class="bulb"></div></div>
         <div class="bulb-container"><div class="bulb"></div></div>

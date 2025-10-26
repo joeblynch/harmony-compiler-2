@@ -12,10 +12,12 @@ const MUSIC_PLAYER_TAPE = 'tapes/pdp1m13.rim';
 
 export class AudioClient {
   private playButton = document.getElementById('play') as HTMLButtonElement;
+  private programFlagBulbEls = document.querySelectorAll('#program-flags .bulb');
   private audioContext: AudioContext | null = null;
   private pdp1Audio: AudioWorkletNode | null = null;
   private needsInit = true;
   private playing = false;
+  private songComplete = false;
   private compiled = false;
   private activeSongURL = '';
   private stoppedResolve: null | ((value: unknown) => void) = null;
@@ -28,6 +30,8 @@ export class AudioClient {
     if (this.needsInit) {
       await this.init();
     }
+
+    this.songComplete = false;
 
     if (this.activeSongURL === musicTapeInfo.url) {
       this.pdp1Audio!.port.postMessage({ type: 'restart' } as RestartMessage);
@@ -96,12 +100,19 @@ export class AudioClient {
         this.audioContext!.suspend();
         this.playButton.textContent = 'play';
         this.playing = false;
+        this.songComplete = true;
         break;
       case 'stopped':
         if (this.stoppedResolve) {
           this.stoppedResolve(null);
           this.stoppedResolve = null;
         }
+        break;
+      case 'frame-update':
+        message.pfDutyCycle.forEach(
+          (dc, i) => (this.programFlagBulbEls[i] as HTMLDivElement).style.opacity = dc.toString()
+        );
+        break;
     }
   };
 
@@ -117,7 +128,7 @@ export class AudioClient {
         audioContext.resume();
         playButton.textContent = 'pause';
 
-        if (!this.playing && this.compiled) {
+        if (this.songComplete && this.compiled) {
           this.pdp1Audio!.port.postMessage({ type: 'restart' } as RestartMessage);
         }
       }

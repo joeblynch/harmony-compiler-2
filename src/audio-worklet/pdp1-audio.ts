@@ -7,6 +7,7 @@ import type {
   MusicTape,
   PlaybackEndedMessage,
   StoppedMessage,
+  FrameUpdateMessage,
 } from '../shared-types';
 
 // 3 banks needed for longest of the songs
@@ -19,6 +20,9 @@ const CHM_CPU_FACTOR = 0.92559;
 const PLAY_MEMORY_ADDRESS = 0o1671;
 const JMP_PLA = 0o600000 | PLAY_MEMORY_ADDRESS;
 
+// Assume 60fps in microseconds
+const FRAME_TIME = 1 / 60 * 1e6;
+
 class PDP1AudioProcessor extends AudioWorkletProcessor {
   private readonly pdp1: PDP1 = new PDP1(PDP1_MEMORY_BANKS);
   private firstPlayback = true;
@@ -27,6 +31,8 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
   private nextSampleTime = 0;
   private priorPF = 0;
   private priorCPURunDuration = 0;
+  private frameDuration = 0;
+  private pfFrameDuration = [0, 0, 0, 0];
 
   constructor() {
     super();
@@ -60,7 +66,7 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
   }
 
   process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
-    const { pdp1 } = this;
+    const { pdp1, pfFrameDuration } = this;
 
     if (!this.musicTapeCompiled || !pdp1.running) {
       return true;
@@ -72,6 +78,22 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
     for (let i = 0; i < leftChannel.length && pdp1.running;) {
       const duration = pdp1.continue() / CHM_CPU_FACTOR;
       this.cpuRunDuration += duration;
+
+      this.frameDuration += duration;
+      if (pdp1.programFlags & 0o40) pfFrameDuration[0] += duration;
+      if (pdp1.programFlags & 0o20) pfFrameDuration[1] += duration;
+      if (pdp1.programFlags & 0o10) pfFrameDuration[2] += duration;
+      if (pdp1.programFlags & 0o04) pfFrameDuration[3] += duration;
+
+      if (this.frameDuration >= FRAME_TIME) {
+        this.port.postMessage({
+          type: 'frame-update',
+          pfDutyCycle: pfFrameDuration.map(d => d / this.frameDuration),
+        } as FrameUpdateMessage);
+        
+        this.frameDuration = 0;
+        pfFrameDuration[0] = pfFrameDuration[1] = pfFrameDuration[2] = pfFrameDuration[3] = 0;
+      }
       
       while (this.nextSampleTime <= this.cpuRunDuration && i < leftChannel.length) {
         // Choose the state that's closest to the ideal sample time
@@ -117,6 +139,15 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
 
     if (!pdp1.running) {
       this.port.postMessage({ type: 'playback-ended' } as PlaybackEndedMessage);
+      this.port.postMessage({
+        type: 'frame-update',
+        pfDutyCycle: [
+          (pdp1.programFlags & 0o40) ? 1 : 0,
+          (pdp1.programFlags & 0o20) ? 1 : 0,
+          (pdp1.programFlags & 0o10) ? 1 : 0,
+          (pdp1.programFlags & 0o04) ? 1 : 0,
+        ]
+      } as FrameUpdateMessage);
     }
 
     return true;
