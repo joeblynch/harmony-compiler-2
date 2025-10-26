@@ -6,8 +6,9 @@
 
     // Module and target configuration
     "target": "ES2020",
-    "module": "commonjs",
-    "lib": ["ES2020", "DOM", "WebWorker"],
+    "module": "ES2020",
+    "lib": ["ES2020", "WebWorker"],
+    "types": ["audioworklet"],
 
     // Type checking
     "strict": true,
@@ -40,11 +41,10 @@
     "noUncheckedIndexedAccess": false
   },
   "include": [
-    "src/**/*"
+    "src/audio-worklet/**/*"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "src/audio-worklet"
+    "dist"
   ]
 }

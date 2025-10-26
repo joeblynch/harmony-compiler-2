@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PDP-1 Music Player</title>
+    <style>
+      :root {
+        --theme-hue: 197;
+
+        --text-color: hsl(var(--theme-hue), 100%, 90%);
+        --bg-color: hsl(var(--theme-hue), 24%, 10%);
+        --link-color: hsl(var(--theme-hue), 100%, 82%);
+        --link-hover-color: hsl(var(--theme-hue), 100%, 92%);
+        --border-color: hsl(var(--theme-hue), 20%, 20%);
+        --error-border-color: hsl(8, 100%, 59%);
+        --panel-bg-color: hsl(var(--theme-hue), 24%, 14%);
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: hsl(var(--theme-hue), 24%, 10%);
+        color: var(--text-color);
+        font-family: "Kanit", sans-serif;
+        font-weight: 200;
+        font-size: 1.1em;
+        line-height: 1.45em;
+      }
+
+      button {
+        padding: 0.4em 1em;
+        font-family: "Kanit", sans-serif;
+        font-weight: 300;
+        font-size: 1em;
+        background-color: var(--link-color);
+        color: var(--bg-color);
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        opacity: 1;
+        transition: background-color 0.2s, opacity 0.2s;
+        white-space: nowrap;
+      }
+
+      button:not(:disabled):hover,
+      button:not(:disabled):active {
+        background-color: var(--link-hover-color);
+      }
+
+      button:focus {
+        outline: 1px dotted currentColor;
+        outline-offset: 2px;
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <button id="play">play</button>
+    </div>
+
+    <script src="scripts/main.js"></script>
+  </body>
