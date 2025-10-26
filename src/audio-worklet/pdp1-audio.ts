@@ -5,7 +5,8 @@ import type {
   DataTape,
   LogsMessage,
   MusicTape,
-  PlaybackEndedMessage
+  PlaybackEndedMessage,
+  StoppedMessage,
 } from '../shared-types';
 
 // 3 banks needed for longest of the songs
@@ -42,6 +43,12 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
 
         case 'restart':
           this.restart();
+          break;
+
+        case 'stop':
+          this.clearAudioStreamState();
+          this.pdp1?.stop();
+          this.port.postMessage({ type: 'stopped' } as StoppedMessage);
           break;
       }
     };
@@ -219,6 +226,13 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
     } catch (ex: any) {
       this.postLogs([`error: ${ex.message}`]);
     }
+  }
+
+  private clearAudioStreamState() {
+    this.cpuRunDuration = 0;
+    this.nextSampleTime = 0;
+    this.priorPF = 0;
+    this.priorCPURunDuration = 0;
   }
 
   private restart() {

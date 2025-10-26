@@ -57,11 +57,56 @@
         opacity: 0.6;
         cursor: default;
       }
+
+      .program-flags {
+        display: flex;
+        flex-direction: row;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .bulb-container, .bulb {
+        height: 30px;
+        width: 30px;
+        border-radius: 15px;
+      }
+
+      .bulb-container {
+        background-color: #645746;
+      }
+
+      .bulb {
+        background-color: #f2ba58;
+        opacity: 0;
+        will-change: opacity;
+      }
     </style>
   </head>
   <body>
     <div id="root">
-      <button id="play">play</button>
+      <button id="play" disabled>play</button>
+      <div class="program-flags">
+        <div class="bulb-container"><div class="bulb"></div></div>
+        <div class="bulb-container"><div class="bulb"></div></div>
+        <div class="bulb-container"><div class="bulb"></div></div>
+        <div class="bulb-container"><div class="bulb"></div></div>
+      </div>
+      <ul id="playlist">
+        <li data-song="0">boc-olson</li>
+        <li data-song="1">buxtehude_fugueInCmin</li>
+        <li data-song="2">BWV592-3</li>
+        <li data-song="3">eknm_allegro</li>
+        <li data-song="4">eknm_andante</li>
+        <li data-song="5">gemsOfTheBaroque</li>
+        <li data-song="6">gf</li>
+        <li data-song="7">jsb_2ptInv_1_13</li>
+        <li data-song="8">jsb_littleFugue</li>
+        <li data-song="9">jsb_wtc_v1fugue3</li>
+        <li data-song="10">menuetto</li>
+        <li data-song="11">wtc_if13</li>
+        <li data-song="12">wtc_if3</li>
+        <li data-song="13">wtc_ip1</li>
+      </ul>
     </div>
 
     <script src="scripts/main.js"></script>

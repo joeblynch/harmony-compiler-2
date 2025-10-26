@@ -86,6 +86,10 @@ export class PDP1 {
     return duration;
   }
 
+  stop() {
+    this.cpu.running = false;
+  }
+
   mountTape(tape: Uint8Array) {
     this.tapeReader.mount(tape);
   }

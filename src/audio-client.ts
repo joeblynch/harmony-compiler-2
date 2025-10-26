@@ -1,5 +1,12 @@
-import { musicTapes } from './music-tapes';
-import type { DataTape, InitPDP1Message, LoadMusicMessage, RestartMessage, PDP1AudioMessage } from './shared-types';
+import type {
+  DataTape,
+  MusicTapeInfo,
+  InitPDP1Message,
+  LoadMusicMessage,
+  RestartMessage,
+  StopMessage,
+  PDP1AudioMessage,
+} from './shared-types';
 
 const MUSIC_PLAYER_TAPE = 'tapes/pdp1m13.rim';
 
@@ -7,28 +14,46 @@ export class AudioClient {
   private playButton = document.getElementById('play') as HTMLButtonElement;
   private audioContext: AudioContext | null = null;
   private pdp1Audio: AudioWorkletNode | null = null;
+  private needsInit = true;
   private playing = false;
   private compiled = false;
+  private activeSongURL = '';
+  private stoppedResolve: null | ((value: unknown) => void) = null;
 
   constructor() {
     this.playButton.addEventListener('click', this.onPlayButton);
   }
 
-  private onPlayButton = async () => {
-    let { audioContext, playButton } = this;
-
-    if (audioContext) {
-      if (audioContext.state === 'running') {
-        audioContext.suspend();
-        playButton.textContent = 'play';
-        this.playing = false;
-        return;
-      } else if (audioContext.state === 'suspended') {
-        audioContext.resume();
-        playButton.textContent = 'pause';
-        return;
-      }
+  public async playMusic(musicTapeInfo: MusicTapeInfo) {
+    if (this.needsInit) {
+      await this.init();
     }
+
+    if (this.activeSongURL === musicTapeInfo.url) {
+      this.pdp1Audio!.port.postMessage({ type: 'restart' } as RestartMessage);
+      return;
+    }
+
+    if (this.playing) {
+      // to prevent pop/click we suspend the context and wait for confirmed stop
+      this.audioContext!.suspend();
+      this.pdp1Audio!.port.postMessage({ type: 'stop' } as StopMessage);
+      this.playing = false;
+      await new Promise(resolve => this.stoppedResolve = resolve);
+    }
+
+    const musicTape = await this.fetchTape(musicTapeInfo.url);
+    this.audioContext!.resume();
+
+    this.activeSongURL = musicTape.url;
+    this.pdp1Audio!.port.postMessage({
+      type: 'load-music',
+      tape: { ...musicTapeInfo, ...musicTape },
+    } as LoadMusicMessage, [musicTape.data.buffer]);
+  }
+
+  private async init() {
+    let { audioContext } = this;
 
     // disable the button while we load the PDP-1 audio processor
     this.playButton.disabled = true;
@@ -52,8 +77,8 @@ export class AudioClient {
     filterNode.connect(audioContext.destination);
 
     await this.initPDP1();
-    await this.loadMusic(musicTapes[0]);
-  };
+    this.needsInit = false;
+  }
 
   private onPDP1AudioMessage = (event: MessageEvent<any>) => {
     const message = event.data as PDP1AudioMessage;
@@ -72,6 +97,30 @@ export class AudioClient {
         this.playButton.textContent = 'play';
         this.playing = false;
         break;
+      case 'stopped':
+        if (this.stoppedResolve) {
+          this.stoppedResolve(null);
+          this.stoppedResolve = null;
+        }
+    }
+  };
+
+  private onPlayButton = async () => {
+    let { audioContext, playButton } = this;
+
+    if (audioContext) {
+      if (audioContext.state === 'running') {
+        audioContext.suspend();
+        playButton.textContent = 'play';
+        this.playing = false;
+      } else if (audioContext.state === 'suspended') {
+        audioContext.resume();
+        playButton.textContent = 'pause';
+
+        if (!this.playing && this.compiled) {
+          this.pdp1Audio!.port.postMessage({ type: 'restart' } as RestartMessage);
+        }
+      }
     }
   };
 
@@ -81,14 +130,6 @@ export class AudioClient {
       type: 'init',
       tape: musicPlayer,
     } as InitPDP1Message, [musicPlayer.data.buffer]);
-  }
-
-  private async loadMusic(musicTapeInfo: typeof musicTapes[0]) {
-    const musicTape = await this.fetchTape(musicTapeInfo.url);
-    this.pdp1Audio!.port.postMessage({
-      type: 'load-music',
-      tape: { ...musicTapeInfo, ...musicTape },
-    } as LoadMusicMessage, [musicTape.data.buffer]);
   }
 
   private async fetchTape(url: string): Promise<DataTape> {

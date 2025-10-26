@@ -39,10 +39,20 @@ export interface RestartMessage {
   type: 'restart';
 }
 
+export interface StopMessage {
+  type: 'stop';
+}
+
+export interface StoppedMessage {
+  type: 'stopped';
+}
+
 export type PDP1AudioMessage =
   | InitPDP1Message
   | LogsMessage
   | CompiledMessage
   | LoadMusicMessage
   | PlaybackEndedMessage
-  | RestartMessage;
+  | RestartMessage
+  | StopMessage
+  | StoppedMessage;

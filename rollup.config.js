@@ -42,8 +42,7 @@ export default [
           {
             src: 'public/*',
             dest: 'dist',
-            // Copy directories recursively
-            copyOnce: true
+            
           }
         ],
         verbose: true // Log copied files
