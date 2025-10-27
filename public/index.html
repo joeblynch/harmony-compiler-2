@@ -119,6 +119,7 @@
         overflow-x: hidden;
         overscroll-behavior-x: none;
         min-height: 0;
+        max-width: 460px;
         --top-fade: 1;
         --bottom-fade: 0;
         mask-image: linear-gradient(
@@ -160,12 +161,14 @@
         flex: 1;
         padding-top: 0.15em;
         margin-right: 0.5em;
+        min-width: 0;
       }
 
       #playlist > li .title {
         line-height: 1em;
         text-wrap: nowrap;
         text-overflow: ellipsis;
+        overflow: hidden;
       }
 
       #playlist > li .artist {
@@ -218,6 +221,11 @@
         #playlist {
           grid-row: 3;
           grid-column: 1;
+          max-width: none;
+        }
+
+        #playlist .title {
+          font-size: 0.9em;
         }
 
         #logs-label {
@@ -281,25 +289,26 @@
           </li>
           <li data-song="9">
             <div class="info">
-              <div class="title">The Well-Tempered Clavier - Fugue No. 3 (v1)</div>
+              <div class="title">TWTC - Fugue No. 3 (v1)</div>
               <div class="artist">J.S. Bach</div>
             </div>
+            <button>play</button>
           </li>
           <li data-song="12">
             <div class="info">
-              <div class="title">The Well-Tempered Clavier - Fugue No. 3</div>
+              <div class="title">TWTC - Fugue No. 3</div>
               <div class="artist">J.S. Bach</div>
             </div>
           </li>
           <li data-song="11">
             <div class="info">
-              <div class="title">The Well-Tempered Clavier - Fugue No. 13</div>
+              <div class="title">TWTC - Fugue No. 13</div>
               <div class="artist">J.S. Bach</div>
             </div>
           </li>
           <li data-song="13">
             <div class="info">
-              <div class="title">The Well-Tempered Clavier - Prelude No. 1</div>
+              <div class="title">TWTC - Prelude No. 1</div>
               <div class="artist">J.S. Bach</div>
             </div>
           </li>
