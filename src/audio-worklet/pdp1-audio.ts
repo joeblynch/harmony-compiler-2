@@ -10,8 +10,8 @@ import type {
   FrameUpdateMessage,
 } from '../shared-types';
 
-// 3 banks needed for longest of the songs
-const PDP1_MEMORY_BANKS = 3;
+// 3 banks needed for longest of the songs, go with 4 to match CHM
+const PDP1_MEMORY_BANKS = 4;
 
 // CHM CPU speed variance, based on BoC Olson playback time
 const CHM_CPU_FACTOR = 0.92559;
@@ -161,7 +161,7 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
   private initPDP1(musicPlayerTape: DataTape) {
     try {
       let logs: string[] = [];
-      logs.push(`PDP-1 mem: 12K cpu: ${CHM_CPU_FACTOR * 100}% (CHM)`);
+      logs.push(`PDP-1 mem: ${PDP1_MEMORY_BANKS * 4}K cpu: ${CHM_CPU_FACTOR * 100}% (CHM)`);
 
       logs.push('# load music player');
 

@@ -15,7 +15,7 @@ export class AudioClient {
   private playButton = document.getElementById('play') as HTMLButtonElement;
   private recompileButton = document.getElementById('recompile') as HTMLButtonElement;
   private programFlagBulbEls = document.querySelectorAll('#program-flags .bulb');
-  private logEl = document.getElementById('log') as HTMLDivElement;
+  private logsEl = document.getElementById('logs') as HTMLDivElement;
   private audioContext: AudioContext | null = null;
   private pdp1Audio: AudioWorkletNode | null = null;
   private needsInit = true;
@@ -168,15 +168,15 @@ export class AudioClient {
   }
 
   private addLogs(logs: string[]) {
-    const { logEl } = this;
+    const { logsEl } = this;
     logs.forEach((log) => {
-      const lineEl = document.createElement('div');
-      lineEl.innerText = log;
+      const logEl = document.createElement('div');
+      logEl.innerText = log;
       if (log.startsWith('#')) {
-        lineEl.classList.add('comment');
+        logEl.classList.add('comment');
       }
 
-      logEl.appendChild(lineEl);
+      logsEl.appendChild(logEl);
     });
   }
 }
