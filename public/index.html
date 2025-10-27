@@ -117,6 +117,15 @@
         gap: 0.25em;
         overflow-y: auto;
         min-height: 0;
+        --top-fade: 1;
+        --bottom-fade: 0;
+        mask-image: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, var(--top-fade)),
+        black 4em, black calc(100% - 4em),
+          rgba(0, 0, 0,
+          var(--bottom-fade))
+        );
       }
 
       #playlist > li {
@@ -188,6 +197,34 @@
       #logs > .comment {
         color: hsl(var(--theme-hue), 100%, 64%);
         margin-top: 0.4em;
+      }
+
+      @media (max-width: 800px) {
+        main {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto auto 3fr auto 1fr;
+          padding: 1em;
+        }
+
+        #pdp1-ui {
+          grid-row: 1;
+          grid-column: 1;
+        }
+
+        #playlist {
+          grid-row: 3;
+          grid-column: 1;
+        }
+
+        #logs-label {
+          grid-row: 4;
+          grid-column: 1;
+        }
+
+        #logs {
+          grid-row: 5;
+          grid-column: 1;
+        }
       }
     </style>
   </head>

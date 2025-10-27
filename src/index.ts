@@ -1,5 +1,6 @@
 import { AudioClient } from './audio-client';
 import { musicTapes } from './music-tapes';
+import './scroll-fade';
 
 const audioClient = new AudioClient();
 
