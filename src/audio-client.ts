@@ -178,5 +178,7 @@ export class AudioClient {
 
       logsEl.appendChild(logEl);
     });
+
+    logsEl.scrollTop = logsEl.scrollHeight;
   }
 }
