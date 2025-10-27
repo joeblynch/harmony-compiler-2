@@ -12,8 +12,8 @@ import type {
 const MUSIC_PLAYER_TAPE = 'tapes/pdp1m13.rim';
 
 export class AudioClient {
-  private playButton = document.getElementById('play') as HTMLButtonElement;
-  private recompileButton = document.getElementById('recompile') as HTMLButtonElement;
+  private playButtonEl = document.getElementById('play') as HTMLButtonElement;
+  private recompileButtonEl = document.getElementById('recompile') as HTMLButtonElement;
   private programFlagBulbEls = document.querySelectorAll('#program-flags .bulb');
   private logsEl = document.getElementById('logs') as HTMLDivElement;
   private audioContext: AudioContext | null = null;
@@ -26,8 +26,8 @@ export class AudioClient {
   private stoppedResolve: null | ((value: unknown) => void) = null;
 
   constructor() {
-    this.playButton.addEventListener('click', this.onPlayButton);
-    this.recompileButton.addEventListener('click', this.onRecompileButton);
+    this.playButtonEl.addEventListener('click', this.onPlayButton);
+    this.recompileButtonEl.addEventListener('click', this.onRecompileButton);
   }
 
   public async playMusic(musicTapeInfo: MusicTapeInfo) {
@@ -63,8 +63,6 @@ export class AudioClient {
   private async init() {
     let { audioContext } = this;
 
-    // disable the button while we load the PDP-1 audio processor
-    this.playButton.disabled = true;
     this.playing = false;
     this.compiled = false;
 
@@ -95,14 +93,15 @@ export class AudioClient {
         this.addLogs(message.logs);
         break;
       case 'compiled':
-        this.playButton.textContent = 'pause';
-        this.playButton.disabled = false;
+        this.playButtonEl.textContent = 'pause';
+        this.playButtonEl.disabled = false;
+        this.recompileButtonEl.disabled = false;
         this.playing = true;
         this.compiled = true;
         break;
       case 'playback-ended':
         this.audioContext!.suspend();
-        this.playButton.textContent = 'play';
+        this.playButtonEl.textContent = 'play';
         this.playing = false;
         this.songComplete = true;
         break;
@@ -121,21 +120,12 @@ export class AudioClient {
   };
 
   private onPlayButton = async () => {
-    let { audioContext, playButton } = this;
+    let { audioContext } = this;
 
-    if (audioContext) {
-      if (audioContext.state === 'running') {
-        audioContext.suspend();
-        playButton.textContent = 'play';
-        this.playing = false;
-      } else if (audioContext.state === 'suspended') {
-        audioContext.resume();
-        playButton.textContent = 'pause';
-
-        if (this.songComplete && this.compiled) {
-          this.pdp1Audio!.port.postMessage({ type: 'restart' } as RestartMessage);
-        }
-      }
+    if (audioContext!.state === 'running') {
+      this.pause();
+    } else if (audioContext!.state === 'suspended') {
+      this.play();
     }
   };
 
@@ -151,8 +141,31 @@ export class AudioClient {
         type: 'recompile',
         testWord,
       } as RecompileMessage)
+
+      if (!this.playing) {
+        this.play();
+      }
     }
   };
+
+  private play() {
+    let { audioContext, playButtonEl } = this;
+
+    audioContext!.resume();
+    playButtonEl .textContent = 'pause';
+    this.playing = true;
+
+    if (this.songComplete && this.compiled) {
+      this.pdp1Audio!.port.postMessage({ type: 'restart' } as RestartMessage);
+    }
+  }
+
+  private pause() {
+    let { audioContext, playButtonEl } = this;
+    audioContext!.suspend();
+    playButtonEl.textContent = 'play';
+    this.playing = false;
+  }
 
   private async initPDP1() {
     const musicPlayer = await this.fetchTape(MUSIC_PLAYER_TAPE);
