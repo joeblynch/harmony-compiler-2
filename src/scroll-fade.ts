@@ -1,6 +1,6 @@
 (() => {
   const playlistEl = document.getElementById('playlist')!;
-  const FADE_HEIGHT_EM = 4;
+  const FADE_HEIGHT_EM = 2;
 
   function updatePlaylistMask() {
     const scrollTop = playlistEl.scrollTop;
@@ -8,17 +8,17 @@
     const clientHeight = playlistEl.clientHeight;
     const scrollBottom = scrollHeight - scrollTop - clientHeight;
 
-    // Convert 4em to pixels
+    // convert em to pixels
     const fontSize = parseFloat(getComputedStyle(playlistEl).fontSize);
     const fadeHeightPx = FADE_HEIGHT_EM * fontSize;
 
-    // Calculate fade for top: 1 at top, transitions to 0 when 4em scrolled
+    // calculate fade for top: 1 at top, transitions to 0 when 4em scrolled
     let topFade = 1;
     if (scrollTop > 0) {
       topFade = Math.max(1 - (scrollTop / fadeHeightPx), 0);
     }
 
-    // Calculate fade for bottom: 1 at bottom, transitions to 0 when 4em from bottom
+    // calculate fade for bottom: 1 at bottom, transitions to 0 when 4em from bottom
     let bottomFade = 1;
     if (scrollBottom > 0) {
       bottomFade = Math.max(1 - (scrollBottom / fadeHeightPx), 0);
