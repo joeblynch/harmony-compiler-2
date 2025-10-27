@@ -13,6 +13,7 @@ const MUSIC_PLAYER_TAPE = 'tapes/pdp1m13.rim';
 
 export class AudioClient {
   private recompileButtonEl = document.getElementById('recompile') as HTMLButtonElement;
+  private twInputEl = document.getElementById('tw-input') as HTMLInputElement;
   private programFlagBulbEls = document.querySelectorAll('#program-flags .bulb');
   private logsEl = document.getElementById('logs') as HTMLDivElement;
   private audioContext: AudioContext | null = null;
@@ -52,6 +53,7 @@ export class AudioClient {
     this.audioContext!.resume();
 
     this.activeSongURL = musicTape.url;
+    this.twInputEl.value = musicTapeInfo.tempo.toString(8);
     this.pdp1Audio!.port.postMessage({
       type: 'load-music',
       tape: { ...musicTapeInfo, ...musicTape },
@@ -92,6 +94,7 @@ export class AudioClient {
         break;
       case 'compiled':
         this.recompileButtonEl.disabled = false;
+        this.twInputEl.disabled = false;
         this.playing = true;
         this.compiled = true;
         document.querySelector('#playlist > li.active')?.classList.add('playing');
@@ -127,11 +130,12 @@ export class AudioClient {
   };
 
   private onRecompileButton = async () => {
-    const testWordInput = prompt('test word (octal)');
+    const testWordInput = this.twInputEl.value;
     if (testWordInput) {
       const testWord = parseInt(testWordInput, 8);
       if (testWord !== 0 && (isNaN(testWord) || testWord < 0o40 || testWord > 0o1377)) {
         alert('invalid tempo. range: 40 to 1377 octal.');
+        return;
       }
 
       this.pdp1Audio?.port.postMessage({

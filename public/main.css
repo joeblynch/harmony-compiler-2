@@ -72,12 +72,31 @@ button:disabled {
 
 #pdp1-ui .inputs {
   flex: 1;
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  min-width: 0;
+}
+
+#tw-input {
+  outline: none;
+  min-width: 0;
+  width: 42px;
+  padding: 0.45em 0.4em 0.25em;
+  font-family: "Kanit", sans-serif;
+  font-weight: 300;
+  font-size: 1em;
+  background-color: var(--panel-bg-color);
+  color: var(--text-color);
+  border: 1px solid hsl(var(--theme-hue), 42%, 25%);
+  border-radius: 3px;
 }
 
 #program-flags {
   display: flex;
   flex-direction: row;
   gap: 6px;
+  margin-left: 0.6em;
 }
 
 .bulb-container, .bulb {
