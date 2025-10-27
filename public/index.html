@@ -4,247 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>PDP-1 Music Player</title>
-    <style>
-      :root {
-        --theme-hue: 197;
-
-        --text-color: hsl(var(--theme-hue), 100%, 90%);
-        --bg-color: hsl(var(--theme-hue), 24%, 10%);
-        --link-color: hsl(var(--theme-hue), 100%, 82%);
-        --link-hover-color: hsl(var(--theme-hue), 100%, 92%);
-        --border-color: hsl(var(--theme-hue), 20%, 20%);
-        --error-border-color: hsl(8, 100%, 59%);
-        --panel-bg-color: hsl(var(--theme-hue), 24%, 14%);
-      }
-
-      body {
-        margin: 0;
-        padding: 0;
-        background-color: hsl(var(--theme-hue), 24%, 10%);
-        color: var(--text-color);
-        font-family: "Kanit", sans-serif;
-        font-weight: 200;
-        font-size: 1.1em;
-        line-height: 1.45em;
-      }
-
-      main {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        grid-template-rows: auto 1fr;
-        max-width: 800px;
-        max-height: 100vh;
-        margin: 0 auto;
-        gap: 0.4em 0.8em;
-        padding: 2em 0 1em;
-        box-sizing: border-box;
-      }
-
-      button {
-        width: 6.5em;
-        padding: 0.4em 1em;
-        font-family: "Kanit", sans-serif;
-        font-weight: 300;
-        font-size: 1em;
-        background-color: var(--link-color);
-        color: var(--bg-color);
-        border: none;
-        border-radius: 3px;
-        cursor: pointer;
-        opacity: 1;
-        transition: background-color 0.2s, opacity 0.2s;
-        white-space: nowrap;
-      }
-
-      button:not(:disabled):hover,
-      button:not(:disabled):active {
-        background-color: var(--link-hover-color);
-      }
-
-      button:focus {
-        outline: 1px dotted currentColor;
-        outline-offset: 2px;
-      }
-
-      button:disabled {
-        opacity: 0.6;
-        cursor: default;
-      }
-
-      #pdp1-ui {
-        grid-row: 1;
-        grid-column: 1;
-        display: flex;
-        gap: 0.1em;
-      }
-
-      #pdp1-ui .inputs {
-        flex: 1;
-      }
-
-      #program-flags {
-        display: flex;
-        flex-direction: row;
-        gap: 6px;
-      }
-
-      .bulb-container, .bulb {
-        height: 30px;
-        width: 30px;
-        border-radius: 15px;
-      }
-
-      .bulb-container {
-        background-color: #645746;
-      }
-
-      .bulb {
-        background-color: #f2ea58;
-        box-shadow: inset 0 0 2px 5px #f2ba58;
-        opacity: 0;
-        will-change: opacity;
-        transition: opacity 64ms;
-      }
-
-      #playlist {
-        grid-row: 2;
-        grid-column: 1;
-        display: flex;
-        flex-direction: column;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        gap: 0.25em;
-        overflow-y: auto;
-        overflow-x: hidden;
-        overscroll-behavior-x: none;
-        min-height: 0;
-        max-width: 460px;
-        --top-fade: 1;
-        --bottom-fade: 0;
-        mask-image: linear-gradient(
-          to bottom,
-          rgba(0, 0, 0, var(--top-fade)),
-        black 4em, black calc(100% - 4em),
-          rgba(0, 0, 0,
-          var(--bottom-fade))
-        );
-      }
-
-      #playlist > li {
-        display: flex;
-        cursor: pointer;
-        padding: 0.5em;
-        background: hsl(var(--theme-hue), 42%, 15%);
-        border-radius: 0.15em;
-        border: 1px solid hsl(var(--theme-hue), 42%, 25%);
-        height: 1.9em;
-        align-items: center;
-      }
-
-      @media (hover: hover) and (pointer: fine) {
-        #playlist > li:hover {
-          background: hsl(var(--theme-hue), 42%, 25%);
-          border: 1px solid hsl(var(--theme-hue), 42%, 35%)
-        }
-      }
-
-      #playlist > li.active {
-        background: hsl(var(--theme-hue), 42%, 20%);
-        border: 1px solid hsl(var(--theme-hue), 42%, 30%);
-        box-shadow: inset 0 0 0.8em hsl(var(--theme-hue), 84%, 22%);
-      }
-
-      #playlist > li .info {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        padding-top: 0.15em;
-        margin-right: 0.5em;
-        min-width: 0;
-      }
-
-      #playlist > li .title {
-        line-height: 1em;
-        text-wrap: nowrap;
-        text-overflow: ellipsis;
-        overflow: hidden;
-      }
-
-      #playlist > li .artist {
-        font-size: 0.8em;
-        line-height: 1.1em;
-        opacity: 0.9;
-      }
-
-      #logs-label {
-        grid-row: 1;
-        grid-column: 2;
-        align-self: end;
-      }
-
-      #logs {
-        grid-row: 2;
-        grid-column: 2;
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-        box-sizing: border-box;
-        background-color: hsl(var(--theme-hue), 24%, 6%);
-        font-family: monospace;
-        font-size: 0.84em;
-        line-height: 1em;
-        padding: 1em;
-        border-radius: 0.5em;
-        border: 1px solid hsl(var(--theme-hue), 30%, 22%);
-        overflow-y: auto;
-        scroll-behavior: smooth;
-      }
-
-      #logs > .comment {
-        color: hsl(var(--theme-hue), 100%, 64%);
-        margin-top: 0.4em;
-      }
-
-      @media (max-width: 800px) {
-        main {
-          grid-template-columns: 1fr;
-          grid-template-rows: auto auto 3fr auto 1fr;
-          padding: 1em;
-        }
-
-        #pdp1-ui {
-          grid-row: 1;
-          grid-column: 1;
-        }
-
-        #playlist {
-          grid-row: 3;
-          grid-column: 1;
-          max-width: none;
-        }
-
-        #playlist .title {
-          font-size: 0.9em;
-        }
-
-        #logs-label {
-          grid-row: 4;
-          grid-column: 1;
-        }
-
-        #logs {
-          grid-row: 5;
-          grid-column: 1;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="main.css" />
   </head>
   <body>
     <main>
       <div id="pdp1-ui">
         <div class="inputs">
-          <button id="play" disabled>play</button>
           <button id="recompile" disabled>recompile</button>
         </div>
         <div id="program-flags">
@@ -261,74 +26,89 @@
               <div class="title">Concerto No. 1 in G 3rd movement</div>
               <div class="artist">J.S. Bach</div>
             </div>
+            <div class="play-button"><div class="play-icon"></div></div>
           </li>
           <li data-song="0">
             <div class="info">
               <div class="title">Olson</div>
               <div class="artist">Boards of Canada</div>
             </div>
+            <div class="play-button"><div class="play-icon"></div></div>
           </li>
           <li data-song="5">
             <div class="info">Gems of the Baroque</div>
+            <div class="play-button"><div class="play-icon"></div></div>
           </li>
           <li data-song="6">
             <div class="info">GF</div>
+            <div class="play-button"><div class="play-icon"></div></div>
           </li>
-          <li data-song="10"><div class="info">Menuetto</div></li>
+          <li data-song="10">
+            <div class="info">Menuetto</div>
+            <div class="play-button"><div class="play-icon"></div></div>
+          </li>
           <li data-song="7">
             <div class="info">
               <div class="title">Two-Part Inventions: No. 1 and No. 13</div>
               <div class="artist">J.S. Bach</div>
             </div>
+            <div class="play-button"><div class="play-icon"></div></div>
           </li>
           <li data-song="8">
             <div class="info">
               <div class="title">Little Fugue in G minor</div>
               <div class="artist">J.S. Bach</div>
             </div>
+            <div class="play-button"><div class="play-icon"></div></div>
           </li>
           <li data-song="9">
             <div class="info">
               <div class="title">TWTC - Fugue No. 3 (v1)</div>
               <div class="artist">J.S. Bach</div>
             </div>
-            <button>play</button>
+            <div class="play-button"><div class="play-icon"></div></div>
           </li>
           <li data-song="12">
             <div class="info">
               <div class="title">TWTC - Fugue No. 3</div>
               <div class="artist">J.S. Bach</div>
             </div>
+            <div class="play-button"><div class="play-icon"></div></div>
           </li>
           <li data-song="11">
             <div class="info">
               <div class="title">TWTC - Fugue No. 13</div>
               <div class="artist">J.S. Bach</div>
             </div>
+            <div class="play-button"><div class="play-icon"></div></div>
           </li>
           <li data-song="13">
             <div class="info">
               <div class="title">TWTC - Prelude No. 1</div>
               <div class="artist">J.S. Bach</div>
             </div>
+            <div class="play-button"><div class="play-icon"></div></div>
           </li>
           <li data-song="1">
             <div class="info">
               <div class="title">Fugue in C minor</div>
               <div class="artist">Dietrich Buxtehude</div>
             </div>
+            <div class="play-button"><div class="play-icon"></div></div>
           </li>
           <li data-song="3">
             <div class="info">
               <div class="title">Eine Kleine Nachtmusik (Allegro)</div>
               <div class="artist">Mozart</div>
             </div>
+            <div class="play-button"><div class="play-icon"></div></div>
           </li>
           <li data-song="4">
             <div class="info">
               <div class="title">Eine Kleine Nachtmusik (Andante)</div>
               <div class="artist">Mozart</div>
             </div>
+            <div class="play-button"><div class="play-icon"></div></div>
           </li>
         </ul>
       <div id="logs"></div>
