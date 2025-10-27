@@ -28,7 +28,6 @@ export interface LoadMusicMessage {
 
 export interface CompiledMessage {
   type: 'compiled';
-  tapeURL: string;
 }
 
 export interface PlaybackEndedMessage {
@@ -47,6 +46,11 @@ export interface StoppedMessage {
   type: 'stopped';
 }
 
+export interface RecompileMessage {
+  type: 'recompile';
+  testWord: number;
+}
+
 export interface FrameUpdateMessage {
   type: 'frame-update';
   pfDutyCycle: number[];
@@ -61,4 +65,5 @@ export type PDP1AudioMessage =
   | RestartMessage
   | StopMessage
   | StoppedMessage
+  | RecompileMessage
   | FrameUpdateMessage;

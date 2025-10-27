@@ -5,6 +5,7 @@ import type {
   LoadMusicMessage,
   RestartMessage,
   StopMessage,
+  RecompileMessage,
   PDP1AudioMessage,
 } from './shared-types';
 
@@ -12,7 +13,9 @@ const MUSIC_PLAYER_TAPE = 'tapes/pdp1m13.rim';
 
 export class AudioClient {
   private playButton = document.getElementById('play') as HTMLButtonElement;
+  private recompileButton = document.getElementById('recompile') as HTMLButtonElement;
   private programFlagBulbEls = document.querySelectorAll('#program-flags .bulb');
+  private logEl = document.getElementById('log') as HTMLDivElement;
   private audioContext: AudioContext | null = null;
   private pdp1Audio: AudioWorkletNode | null = null;
   private needsInit = true;
@@ -24,6 +27,7 @@ export class AudioClient {
 
   constructor() {
     this.playButton.addEventListener('click', this.onPlayButton);
+    this.recompileButton.addEventListener('click', this.onRecompileButton);
   }
 
   public async playMusic(musicTapeInfo: MusicTapeInfo) {
@@ -88,7 +92,7 @@ export class AudioClient {
     const message = event.data as PDP1AudioMessage;
     switch (message.type) {
       case 'logs':
-        (message.logs as string[]).forEach(log => console.log(log));
+        this.addLogs(message.logs);
         break;
       case 'compiled':
         this.playButton.textContent = 'pause';
@@ -135,6 +139,21 @@ export class AudioClient {
     }
   };
 
+  private onRecompileButton = async () => {
+    const testWordInput = prompt('test word (octal)');
+    if (testWordInput) {
+      const testWord = parseInt(testWordInput, 8);
+      if (testWord !== 0 && (isNaN(testWord) || testWord < 0o40 || testWord > 0o1377)) {
+        alert('invalid tempo. range: 40 to 1377 octal.');
+      }
+
+      this.pdp1Audio?.port.postMessage({
+        type: 'recompile',
+        testWord,
+      } as RecompileMessage)
+    }
+  };
+
   private async initPDP1() {
     const musicPlayer = await this.fetchTape(MUSIC_PLAYER_TAPE);
     this.pdp1Audio!.port.postMessage({
@@ -146,5 +165,18 @@ export class AudioClient {
   private async fetchTape(url: string): Promise<DataTape> {
     const res = await fetch(url);
     return { url, data: new Uint8Array(await res.arrayBuffer()) };
+  }
+
+  private addLogs(logs: string[]) {
+    const { logEl } = this;
+    logs.forEach((log) => {
+      const lineEl = document.createElement('div');
+      lineEl.innerText = log;
+      if (log.startsWith('#')) {
+        lineEl.classList.add('comment');
+      }
+
+      logEl.appendChild(lineEl);
+    });
   }
 }

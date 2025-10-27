@@ -54,8 +54,12 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
         case 'stop':
           this.clearAudioStreamState();
           this.pdp1?.stop();
+          this.postLogs(['#stop playback', 'stop']);
           this.port.postMessage({ type: 'stopped' } as StoppedMessage);
           break;
+
+        case 'recompile':
+          this.compile(message.testWord, true);
       }
     };
   }
@@ -138,6 +142,7 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
     }
 
     if (!pdp1.running) {
+      this.postLogs(['# playback ended']);
       this.port.postMessage({ type: 'playback-ended' } as PlaybackEndedMessage);
       this.port.postMessage({
         type: 'frame-update',
@@ -218,52 +223,84 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
         logs.push('start');
       }
 
-      // set the tempo before compiling if needed
-      if (pdp1.testWord !== tape.tempo) {
-        logs.push('# set tempo');
-        pdp1.testWord = tape.tempo;
-        logs.push(`test word = ${tape.tempo.toString(8)}`);
-      }
-
-      // switch to music playback mode
-      logs.push('# compile music');
-      pdp1.setSenseSwitch(1, false);
-      logs.push('sense switch 1 = off');
-
-      // break at music playback, after compile completes
-      pdp1.breakpoint = PLAY_MEMORY_ADDRESS;
-      logs.push(`breakpoint = ${PLAY_MEMORY_ADDRESS.toString(8)} (pla)`);
-      
-      // run compile
-      logs.push('start');
       this.postLogs(logs);
-      pdp1.start();
-    
-      if (this.musicTapeCompiled) {
-        pdp1.breakpoint = null;
-        pdp1.singleInstruction = true;
 
-        this.postLogs([
-          `break pc: ${pdp1.pc.toString(8)}`,
-          '# compiled, step instructions to sample audio',
-          'breakpoint = null',
-          'single instruction = on',
-        ]);
-
-        this.port.postMessage({ 'type': 'compiled', tapeURL: tape.url } as CompiledMessage);
-      } else {
-        this.postLogs([`error: compilation failed`]);  
-      }
+      this.compile(tape.tempo);
     } catch (ex: any) {
       this.postLogs([`error: ${ex.message}`]);
     }
   }
 
-  private clearAudioStreamState() {
-    this.cpuRunDuration = 0;
-    this.nextSampleTime = 0;
-    this.priorPF = 0;
-    this.priorCPURunDuration = 0;
+  private compile(tempo: number, recompile = false) {
+    const { pdp1 } = this;
+    let logs: string[] = [];
+
+    // set the tempo before compiling if needed
+    if (pdp1.testWord !== tempo) {
+      logs.push('# set tempo');
+      pdp1.testWord = tempo;
+      logs.push(`test word = ${tempo.toString(8)}`);
+    }
+
+    if (recompile) {
+      logs.push('# recompile music');
+      pdp1.setSenseSwitch(2, true);
+      logs.push('sense switch 2 = on');
+    } else {
+      logs.push('# compile music');
+    }
+    
+    if (pdp1.getSenseSwitch(1)) {
+      // switch to music playback mode
+      pdp1.setSenseSwitch(1, false);
+      logs.push('sense switch 1 = off');
+    }
+
+    // break at music playback, after compile completes
+    pdp1.breakpoint = PLAY_MEMORY_ADDRESS;
+    logs.push(`breakpoint = ${PLAY_MEMORY_ADDRESS.toString(8)} (pla)`);
+    
+    // run compile
+    if (this.pdp1.singleInstruction) {
+      this.pdp1.singleInstruction = false;
+      logs.push('singleInstruction = off');
+    }
+
+    logs.push('start');
+    this.postLogs(logs);
+    pdp1.start();
+  
+    if (this.musicTapeCompiled) {
+      pdp1.breakpoint = null;
+      pdp1.singleInstruction = true;
+
+      logs = [`break pc: ${pdp1.pc.toString(8)}`];
+
+      if (recompile) {
+        pdp1.setSenseSwitch(2, false);
+        logs.push(
+          '# recompiled',
+          'sense switch 2 = off'
+        );
+      } else {
+        logs.push(
+          '# compiled',
+        );
+      }
+
+      logs.push(
+        'breakpoint = null',
+        '# step instructions to sample audio',
+        'single instruction = on',
+        '# playback started',
+      )
+
+      this.postLogs(logs);
+
+      this.port.postMessage({ 'type': 'compiled' } as CompiledMessage);
+    } else {
+      this.postLogs([`error: compilation failed`]);  
+    }
   }
 
   private restart() {
@@ -275,6 +312,13 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
     this.pdp1.start(0o4);
     logs.push('start');
     this.postLogs(logs);
+  }
+
+  private clearAudioStreamState() {
+    this.cpuRunDuration = 0;
+    this.nextSampleTime = 0;
+    this.priorPF = 0;
+    this.priorCPURunDuration = 0;
   }
 
   private postLogs(logs: string[]) {
