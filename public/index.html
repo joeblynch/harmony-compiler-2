@@ -29,6 +29,7 @@
       }
 
       button {
+        width: 6.5em;
         padding: 0.4em 1em;
         font-family: "Kanit", sans-serif;
         font-weight: 300;
@@ -82,11 +83,75 @@
         will-change: opacity;
         transition: opacity 64ms;
       }
+
+      #playlist {
+        display: inline-flex;
+        flex-direction: column;
+        list-style: none;
+        padding: 0;
+        gap: 0.25em;
+      }
+
+      #playlist > li {
+        display: flex;
+        cursor: pointer;
+        padding: 0.5em;
+        background: hsl(var(--theme-hue), 42%, 15%);
+        border-radius: 0.2em;
+        border: 1px solid hsl(var(--theme-hue), 42%, 25%);
+        height: 1.9em;
+        align-items: center;
+      }
+
+      #playlist > li:hover {
+        background: hsl(var(--theme-hue), 42%, 25%);
+        border: 1px solid hsl(var(--theme-hue), 42%, 35%)
+      }
+
+      #playlist > li.active {
+        background: hsl(var(--theme-hue), 42%, 20%);
+        border: 1px solid hsl(var(--theme-hue), 42%, 30%);
+        box-shadow: inset 0 0 0.8em hsl(var(--theme-hue), 84%, 22%);
+      }
+
+      #playlist > li .info {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        padding-top: 0.15em;
+        margin-right: 0.5em;
+      }
+
+      #playlist > li .title {
+        line-height: 1em;
+        text-wrap: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      #playlist > li .artist {
+        font-size: 0.8em;
+        line-height: 1.1em;
+        opacity: 0.9;
+      }
+
+      #log {
+        background-color: hsl(var(--theme-hue), 24%, 6%);
+        font-family: monospace;
+        font-size: 0.84em;
+        line-height: 1em;
+        padding: 1em;
+      }
+
+      #log > .comment {
+        color: hsl(var(--theme-hue), 100%, 64%);
+        margin-top: 0.4em;
+      }
     </style>
   </head>
   <body>
     <div id="root">
       <button id="play" disabled>play</button>
+      <button id="recompile">recompile</button>
       <div id="program-flags">
         <div class="bulb-container"><div class="bulb"></div></div>
         <div class="bulb-container"><div class="bulb"></div></div>
@@ -94,21 +159,81 @@
         <div class="bulb-container"><div class="bulb"></div></div>
       </div>
       <ul id="playlist">
-        <li data-song="0">boc-olson</li>
-        <li data-song="1">buxtehude_fugueInCmin</li>
-        <li data-song="2">BWV592-3</li>
-        <li data-song="3">eknm_allegro</li>
-        <li data-song="4">eknm_andante</li>
-        <li data-song="5">gemsOfTheBaroque</li>
-        <li data-song="6">gf</li>
-        <li data-song="7">jsb_2ptInv_1_13</li>
-        <li data-song="8">jsb_littleFugue</li>
-        <li data-song="9">jsb_wtc_v1fugue3</li>
-        <li data-song="10">menuetto</li>
-        <li data-song="11">wtc_if13</li>
-        <li data-song="12">wtc_if3</li>
-        <li data-song="13">wtc_ip1</li>
+        <li data-song="2" class="active">
+          <div class="info">
+            <div class="title">Concerto No. 1 in G 3rd movement</div>
+            <div class="artist">J.S. Bach</div>
+          </div>
+        </li>
+        <li data-song="0">
+          <div class="info">
+            <div class="title">Olson</div>
+            <div class="artist">Boards of Canada</div>
+          </div>
+        </li>
+        <li data-song="5">
+          <div class="info">Gems of the Baroque</div>
+        </li>
+        <li data-song="6">
+          <div class="info">GF</div>
+        </li>
+        <li data-song="10"><div class="info">Menuetto</div></li>
+        <li data-song="7">
+          <div class="info">
+            <div class="title">Two-Part Inventions: No. 1 and No. 13</div>
+            <div class="artist">J.S. Bach</div>
+          </div>
+        </li>
+        <li data-song="8">
+          <div class="info">
+            <div class="title">Little Fugue in G minor</div>
+            <div class="artist">J.S. Bach</div>
+          </div>
+        </li>
+        <li data-song="9">
+          <div class="info">
+            <div class="title">The Well-Tempered Clavier - Fugue No. 3 (v1)</div>
+            <div class="artist">J.S. Bach</div>
+          </div>
+        </li>
+        <li data-song="12">
+          <div class="info">
+            <div class="title">The Well-Tempered Clavier - Fugue No. 3</div>
+            <div class="artist">J.S. Bach</div>
+          </div>
+        </li>
+        <li data-song="11">
+          <div class="info">
+            <div class="title">The Well-Tempered Clavier - Fugue No. 13</div>
+            <div class="artist">J.S. Bach</div>
+          </div>
+        </li>
+        <li data-song="13">
+          <div class="info">
+            <div class="title">The Well-Tempered Clavier - Prelude No. 1</div>
+            <div class="artist">J.S. Bach</div>
+          </div>
+        </li>
+        <li data-song="1">
+          <div class="info">
+            <div class="title">Fugue in C minor</div>
+            <div class="artist">Dietrich Buxtehude</div>
+          </div>
+        </li>
+        <li data-song="3">
+          <div class="info">
+            <div class="title">Eine Kleine Nachtmusik (Allegro)</div>
+            <div class="artist">Mozart</div>
+          </div>
+        </li>
+        <li data-song="4">
+          <div class="info">
+            <div class="title">Eine Kleine Nachtmusik (Andante)</div>
+            <div class="artist">Mozart</div>
+          </div>
+        </li>
       </ul>
+      <div id="log"></div>
     </div>
 
     <script src="scripts/main.js"></script>
