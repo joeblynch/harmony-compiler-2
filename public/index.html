@@ -116,6 +116,8 @@
         margin: 0;
         gap: 0.25em;
         overflow-y: auto;
+        overflow-x: hidden;
+        overscroll-behavior-x: none;
         min-height: 0;
         --top-fade: 1;
         --bottom-fade: 0;
@@ -139,9 +141,11 @@
         align-items: center;
       }
 
-      #playlist > li:hover {
-        background: hsl(var(--theme-hue), 42%, 25%);
-        border: 1px solid hsl(var(--theme-hue), 42%, 35%)
+      @media (hover: hover) and (pointer: fine) {
+        #playlist > li:hover {
+          background: hsl(var(--theme-hue), 42%, 25%);
+          border: 1px solid hsl(var(--theme-hue), 42%, 35%)
+        }
       }
 
       #playlist > li.active {
@@ -233,7 +237,7 @@
       <div id="pdp1-ui">
         <div class="inputs">
           <button id="play" disabled>play</button>
-          <button id="recompile">recompile</button>
+          <button id="recompile" disabled>recompile</button>
         </div>
         <div id="program-flags">
           <div class="bulb-container"><div class="bulb"></div></div>
@@ -244,7 +248,7 @@
       </div>
       <div id="logs-label">PDP-1 logs:</div>
       <ul id="playlist">
-          <li data-song="2" class="active">
+          <li data-song="2">
             <div class="info">
               <div class="title">Concerto No. 1 in G 3rd movement</div>
               <div class="artist">J.S. Bach</div>
