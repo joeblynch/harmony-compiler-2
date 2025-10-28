@@ -73,14 +73,22 @@ export class AudioClient {
     this.pdp1Audio = new AudioWorkletNode(audioContext, 'pdp1-audio-processor', { outputChannelCount: [2] });
     this.pdp1Audio.port.onmessage = this.onPDP1AudioMessage;
     
-    // Create a low pass filter with 2kHz cutoff
-    const filterNode = audioContext.createBiquadFilter();
-    filterNode.type = 'lowpass';
-    filterNode.frequency.value = 2000;
+    // create a lowpass filter with 2kHz cutoff
+    const lowpassFilter = audioContext.createBiquadFilter();
+    lowpassFilter.type = 'lowpass';
+    lowpassFilter.frequency.value = 2000;
+    lowpassFilter.Q.value = 0.5; // simulate 1-pole RC filter on PDP-1
+
+    // create a highpass filter to cut DC offset. post-processing in my headphones pops and cracks otherwise
+    const highpassFilter = audioContext.createBiquadFilter();
+    highpassFilter.type = 'highpass'
+    highpassFilter.frequency.value = 30;
+    highpassFilter.Q.value = Math.sqrt(2) / 2; // flat Buttersworth response
     
-    // Connect the nodes
-    this.pdp1Audio.connect(filterNode);
-    filterNode.connect(audioContext.destination);
+    // connect the nodes
+    this.pdp1Audio.connect(lowpassFilter);
+    lowpassFilter.connect(highpassFilter);
+    highpassFilter.connect(audioContext.destination);
 
     await this.initPDP1();
     this.needsInit = false;
@@ -186,8 +194,8 @@ export class AudioClient {
     logs.forEach((log) => {
       const logEl = document.createElement('div');
       logEl.innerText = log;
-      if (log.startsWith('#')) {
-        logEl.classList.add('comment');
+      if (log[0] === '#') {
+        logEl.classList.add('log-comment');
       }
 
       logsEl.appendChild(logEl);
