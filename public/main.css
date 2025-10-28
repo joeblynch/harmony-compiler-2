@@ -97,6 +97,7 @@ button:disabled {
   flex-direction: row;
   gap: 6px;
   margin-left: 0.6em;
+  align-self: center;
 }
 
 .bulb-container, .bulb {
@@ -270,7 +271,7 @@ button:disabled {
   background-color: hsl(var(--theme-hue), 24%, 6%);
   font-family: Rubik, monospace;
   font-weight: 300;
-  font-size: 0.7em;
+  font-size: 0.8em;
   line-height: 1em;
   padding: 1em;
   border-radius: 0.5em;
@@ -279,7 +280,7 @@ button:disabled {
   scroll-behavior: smooth;
 }
 
-#logs > .comment {
+#logs > .log-comment {
   color: hsl(var(--theme-hue), 100%, 64%);
   margin-top: 0.4em;
 }
