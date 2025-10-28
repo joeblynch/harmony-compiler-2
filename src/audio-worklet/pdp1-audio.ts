@@ -10,8 +10,8 @@ import type {
   FrameUpdateMessage,
 } from '../shared-types';
 
-// 3 banks needed for longest of the songs, go with 4 to match CHM
-const PDP1_MEMORY_BANKS = 4;
+// 3 banks needed for longest of the songs, and matches CHM
+const PDP1_MEMORY_BANKS = 3;
 
 // CHM CPU speed variance, based on BoC Olson playback time
 const CHM_CPU_FACTOR = 0.92559;
@@ -119,15 +119,15 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
 
         let left: number
         let right: number;
-        left = (pf & 0o40) ? 1 : 0;     // voice 1
-        left += (pf & 0o20) ? -1 : 0;   // voice 2
+        left = (pf & 0o40) ? 0.5 : 0;     // voice 1
+        left += (pf & 0o20) ? -0.5 : 0;   // voice 2
         
-        right = (pf & 0o10) ? 1 : 0;    // voice 3
-        right += (pf & 0o04) ? -1 : 0;  // voice 4
+        right = (pf & 0o10) ? 0.5 : 0;    // voice 3
+        right += (pf & 0o04) ? -0.5 : 0;  // voice 4
 
         // TODO: volume control from client side
-        left *= 0.4;
-        right *= 0.4;
+        left *= 0.6;
+        right *= 0.6;
 
         leftChannel[i] = left;
         rightChannel[i] = right;
