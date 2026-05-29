@@ -15,4 +15,5 @@ export const musicTapes: MusicTapeInfo[] = [
   { url: 'tapes/wtc_if13.bin', tempo: 0, voices: 3 },
   { url: 'tapes/wtc_if3.bin', tempo: 0, voices: 3 },
   { url: 'tapes/wtc_ip1.bin', tempo: 0, voices: 4 },
+  { url: 'tapes/happy-birthday-janelle.bin', tempo: 0, voices: 4 },
 ];

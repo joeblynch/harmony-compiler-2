@@ -255,10 +255,15 @@ button:disabled {
     right: 0;
 }
 
-#logs-label {
+#logs-header {
+  display: flex;
   grid-row: 1;
   grid-column: 2;
+}
+
+#logs-label {
   align-self: end;
+  flex: 1;
 }
 
 #logs {
@@ -303,7 +308,7 @@ button:disabled {
     max-width: none;
   }
 
-  #logs-label {
+  #logs-header {
     grid-row: 4;
     grid-column: 1;
   }

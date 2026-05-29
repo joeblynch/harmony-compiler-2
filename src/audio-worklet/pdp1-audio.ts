@@ -15,6 +15,7 @@ const PDP1_MEMORY_BANKS = 3;
 
 // CHM CPU speed variance, based on BoC Olson playback time
 const CHM_CPU_FACTOR = 0.92559;
+// const CHM_CPU_FACTOR = 1;
 
 // Memory address of the `pla` symbol that starts playback
 const PLAY_MEMORY_ADDRESS = 0o1671;
@@ -41,6 +42,10 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
       switch (message.type) {
         case 'init': 
           this.initPDP1(message.tape);
+
+          // this.pdp1.deposit(0o00027, 0o667100);
+          // this.pdp1.deposit(0o00011, 0o642037);
+          // this.pdp1.deposit(0o00011, 0o000037);
           break;
 
         case 'load-music':
@@ -121,7 +126,7 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
         let right: number;
         left = (pf & 0o40) ? 0.5 : 0;     // voice 1
         left += (pf & 0o20) ? -0.5 : 0;   // voice 2
-        
+
         right = (pf & 0o10) ? 0.5 : 0;    // voice 3
         right += (pf & 0o04) ? -0.5 : 0;  // voice 4
 

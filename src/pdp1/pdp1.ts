@@ -74,6 +74,10 @@ export class PDP1 {
     return this.continue();
   }
 
+  stop() {
+    this.cpu.running = false;
+  }
+
   continue() {
     let duration = 0;
 
@@ -85,17 +89,13 @@ export class PDP1 {
 
     return duration;
   }
-
-  stop() {
-    this.cpu.running = false;
+  
+  examine(address: number) {
+    return this.memory.read(address);
   }
 
-  mountTape(tape: Uint8Array) {
-    this.tapeReader.mount(tape);
-  }
-
-  unmountTape() {
-    this.tapeReader.unmount();
+  deposit(address: number, value: number) {
+    this.memory.write(address, value);
   }
 
   readIn(tape?: Uint8Array, extension = 0) {
@@ -131,5 +131,13 @@ export class PDP1 {
     }
 
     throw new Error('RIM tape missing jmp');
+  }
+
+  mountTape(tape: Uint8Array) {
+    this.tapeReader.mount(tape);
+  }
+
+  unmountTape() {
+    this.tapeReader.unmount();
   }
 }

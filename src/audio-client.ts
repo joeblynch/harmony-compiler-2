@@ -7,6 +7,7 @@ import type {
   StopMessage,
   RecompileMessage,
   PDP1AudioMessage,
+  MusicTape,
 } from './shared-types';
 
 const MUSIC_PLAYER_TAPE = 'tapes/pdp1m13.rim';
@@ -49,7 +50,8 @@ export class AudioClient {
       await new Promise(resolve => this.stoppedResolve = resolve);
     }
 
-    const musicTape = await this.fetchTape(musicTapeInfo.url);
+    // TODO cleanup local file hack
+    const musicTape = (musicTapeInfo as any).data ? musicTapeInfo as MusicTape : await this.fetchTape(musicTapeInfo.url);
     this.audioContext!.resume();
 
     this.activeSongURL = musicTape.url;
