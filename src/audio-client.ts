@@ -12,6 +12,12 @@ import type {
 
 const MUSIC_PLAYER_TAPE = 'tapes/pdp1m13.rim';
 
+// A locally-uploaded tape arrives already decoded (it carries its `data`); a built-in tape
+// is just metadata and must be fetched.
+function isLoadedTape(tape: MusicTapeInfo): tape is MusicTape {
+  return 'data' in tape && (tape as MusicTape).data instanceof Uint8Array;
+}
+
 export class AudioClient {
   private recompileButtonEl = document.getElementById('recompile') as HTMLButtonElement;
   private twInputEl = document.getElementById('tw-input') as HTMLInputElement;
@@ -24,6 +30,7 @@ export class AudioClient {
   private songComplete = false;
   private compiled = false;
   private activeSongURL = '';
+  private activeTape: MusicTapeInfo | null = null;
   private stoppedResolve: null | ((value: unknown) => void) = null;
 
   constructor() {
@@ -36,6 +43,7 @@ export class AudioClient {
     }
 
     this.songComplete = false;
+    this.activeTape = musicTapeInfo;
 
     if (this.activeSongURL === musicTapeInfo.url) {
       this.pdp1Audio!.port.postMessage({ type: 'restart' } as RestartMessage);
@@ -50,16 +58,21 @@ export class AudioClient {
       await new Promise(resolve => this.stoppedResolve = resolve);
     }
 
-    // TODO cleanup local file hack
-    const musicTape = (musicTapeInfo as any).data ? musicTapeInfo as MusicTape : await this.fetchTape(musicTapeInfo.url);
+    const musicTape = isLoadedTape(musicTapeInfo) ? musicTapeInfo : await this.fetchTape(musicTapeInfo.url);
     this.audioContext!.resume();
 
     this.activeSongURL = musicTape.url;
     this.twInputEl.value = musicTapeInfo.tempo.toString(8);
+
+    // A fresh tape is about to be loaded and compiled; clear the prior tape's compiled state.
+    this.compiled = false;
+
+    // Transfer a disposable copy so the source buffer (a local tape's only copy) is not detached.
+    const sendData = new Uint8Array(musicTape.data);
     this.pdp1Audio!.port.postMessage({
       type: 'load-music',
-      tape: { ...musicTapeInfo, ...musicTape },
-    } as LoadMusicMessage, [musicTape.data.buffer]);
+      tape: { ...musicTapeInfo, ...musicTape, data: sendData },
+    } as LoadMusicMessage, [sendData.buffer]);
   }
 
   private async init() {
@@ -152,6 +165,11 @@ export class AudioClient {
         type: 'recompile',
         testWord,
       } as RecompileMessage)
+
+      // Persist the new tempo to the tape entry so it survives switching away and back.
+      if (this.activeTape) {
+        this.activeTape.tempo = testWord;
+      }
 
       if (!this.playing) {
         this.play();

@@ -1,4 +1,6 @@
-(() => {
+// Attaches the playlist fade-mask listener and computes the initial mask. Call this AFTER the
+// playlist has been populated, otherwise the initial mask is measured against an empty list.
+export function initScrollFade() {
   const playlistEl = document.getElementById('playlist')!;
   const FADE_HEIGHT_EM = 2;
 
@@ -31,4 +33,4 @@
   playlistEl.addEventListener('scroll', updatePlaylistMask);
 
   updatePlaylistMask();
-})();
+}

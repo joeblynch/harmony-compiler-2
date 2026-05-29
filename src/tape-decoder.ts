@@ -106,18 +106,6 @@ class TapeReader {
         };
     }
 
-    private peekGap(): number | null {
-        const savedPosition = this.position;
-        const result = this.rpb();
-        this.position = savedPosition;
-
-        if (result.word === -1) {
-            return null;
-        }
-
-        return result.gapFrames;
-    }
-
     private parseNote(word: number): Note {
         const articulation = ((word >> 14) & 0o014) | ((word & 0o060000) >> 13);
         const triplet = (word & 0o100000) >> 15;
@@ -287,13 +275,6 @@ class TapeReader {
                 this.log(`\tbars word count: ${totalWordCount}`);
             } else if (partWordCount === totalWordCount + 2) {
                 this.verifyChecksum(word, checksum);
-
-                const peekedGapFrames = this.peekGap();
-                
-                if (peekedGapFrames === null) {
-                    return null;
-                }
-
                 return wordCount;
             } else if (word === 0o600000) {
                 this.log("\t/");
@@ -325,38 +306,42 @@ class TapeReader {
 
     public decode(): number {
         let wordCount = 0;
-        let voice = 1;
+        let voiceCount = 0;
 
-        while (voice <= 4) {
-            if (voice > 1) this.log("\n");
+        // A voice is only counted once BOTH its notes and bars sections decode in full.
+        // The tape format has no end-of-voices marker (see pdp1m13.mac); reading simply
+        // terminates on a clean EOF or an incomplete trailing section.
+        while (voiceCount < 4) {
+            if (voiceCount > 0) this.log("\n");
             this.log("╔═════════════╗");
-            this.log(`║   VOICE ${voice}   ║`);
+            this.log(`║   VOICE ${voiceCount + 1}   ║`);
             this.log("╚═════════════╝");
 
             const notesResult = this.readNotes(wordCount);
-            
+
             if (!notesResult) {
-                this.error("EOF in notes section");
+                break;  // clean EOF — no further voice
             }
 
             wordCount = notesResult.wordCount;
-            const notes = notesResult.notes;
-            const notesCount = notesResult.notesCount;
 
-            const barsResult = this.readBars(wordCount, notes, notesCount);
-            
+            const barsResult = this.readBars(wordCount, notesResult.notes, notesResult.notesCount);
+
             if (barsResult === null) {
-                break;
+                break;  // incomplete voice — do not count it
             }
 
             wordCount = barsResult;
-            voice++;
+            voiceCount++;
+        }
+
+        if (voiceCount === 0) {
+            this.error("no voices found");
         }
 
         this.log(`\nDATA LENGTH: ${Math.ceil((wordCount * 18.0) / 8.0)}B`);
 
-        // return this.output.join('\n');
-        return voice;
+        return voiceCount;
     }
 }
 

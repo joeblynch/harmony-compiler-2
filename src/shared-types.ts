@@ -2,6 +2,8 @@ export interface MusicTapeInfo {
   url: string;
   tempo: number;
   voices: number;
+  title: string;
+  artist?: string;
 }
 
 export interface DataTape {
