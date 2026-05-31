@@ -40,7 +40,7 @@ main {
 button {
   padding: 0.3em 0.5em;
   font-family: "Kanit", sans-serif;
-  font-weight: 300;
+  font-weight: 400;
   font-size: 1em;
   background-color: var(--link-color);
   color: var(--bg-color);
