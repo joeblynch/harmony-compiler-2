@@ -34,5 +34,8 @@ musicTapes.forEach((tape, i) => {
   playlistEl.appendChild(songEl);
 });
 
+const temperamentSelect = document.getElementById('temperament-select') as HTMLSelectElement;
+temperamentSelect.addEventListener('change', () => audioClient.setTemperament(temperamentSelect.value));
+
 initScrollFade();
 initUpload(onSongClick);

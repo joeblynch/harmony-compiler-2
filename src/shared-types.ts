@@ -53,6 +53,11 @@ export interface RecompileMessage {
   testWord: number;
 }
 
+export interface SetTemperamentMessage {
+  type: 'set-temperament';
+  tape: DataTape;
+}
+
 export interface FrameUpdateMessage {
   type: 'frame-update';
   pfDutyCycle: number[];
@@ -68,4 +73,5 @@ export type PDP1AudioMessage =
   | StopMessage
   | StoppedMessage
   | RecompileMessage
+  | SetTemperamentMessage
   | FrameUpdateMessage;

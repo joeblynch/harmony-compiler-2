@@ -65,6 +65,11 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
 
         case 'recompile':
           this.compile(message.testWord, true);
+          break;
+
+        case 'set-temperament':
+          this.applyTemperament(message.tape);
+          break;
       }
     };
   }
@@ -317,6 +322,31 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
     this.pdp1.start(0o4);
     logs.push('start');
     this.postLogs(logs);
+  }
+
+  private applyTemperament(tape: DataTape) {
+    try {
+      const { pdp1 } = this;
+      const logs = ['# apply temperament', `mount: ${tape.url}`];
+
+      // readIn runs the patch bootstrap to hlt; make sure it isn't gated by
+      // leftover playback state (single-instruction stepping / a breakpoint).
+      pdp1.singleInstruction = false;
+      pdp1.breakpoint = null;
+      pdp1.stop();
+      this.clearAudioStreamState();
+
+      // The bootstrap writes 64 words into the frequency table pt (02137..02236)
+      // and halts. (Its scratch overlaps the note buffer; harmless because the
+      // client follows with a full load-music that re-reads every voice.)
+      pdp1.mountTape(tape.data);
+      pdp1.readIn();
+
+      logs.push('patched pt (02137..02236)');
+      this.postLogs(logs);
+    } catch (ex: any) {
+      this.postLogs([`error: ${ex.message}`]);
+    }
   }
 
   private clearAudioStreamState() {

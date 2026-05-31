@@ -6,6 +6,7 @@ import type {
   RestartMessage,
   StopMessage,
   RecompileMessage,
+  SetTemperamentMessage,
   PDP1AudioMessage,
   MusicTape,
 } from './shared-types';
@@ -32,6 +33,12 @@ export class AudioClient {
   private activeSongURL = '';
   private activeTape: MusicTapeInfo | null = null;
   private stoppedResolve: null | ((value: unknown) => void) = null;
+  // The temperament chosen in the UI vs. the one currently patched into the
+  // worklet's frequency table (pt). pt persists across songs, so a patch tape is
+  // only (re)applied when these differ. After init(), pt holds the ROM (equal) table.
+  private selectedTemperament = 'equal';
+  private appliedTemperament: string | null = null;
+  private patchTapes = new Map<string, DataTape>();
 
   constructor() {
     this.recompileButtonEl.addEventListener('click', this.onRecompileButton);
@@ -67,6 +74,10 @@ export class AudioClient {
     // A fresh tape is about to be loaded and compiled; clear the prior tape's compiled state.
     this.compiled = false;
 
+    // Patch the frequency table to the selected temperament (if changed) before
+    // the voices are read and compiled below.
+    await this.ensureTemperamentApplied();
+
     // Transfer a disposable copy so the source buffer (a local tape's only copy) is not detached.
     const sendData = new Uint8Array(musicTape.data);
     this.pdp1Audio!.port.postMessage({
@@ -80,6 +91,8 @@ export class AudioClient {
 
     this.playing = false;
     this.compiled = false;
+    // A fresh readIn of the player ROM leaves the equal-tempered table in pt.
+    this.appliedTemperament = 'equal';
 
     this.audioContext = audioContext = new AudioContext();
 
@@ -207,6 +220,45 @@ export class AudioClient {
   private async fetchTape(url: string): Promise<DataTape> {
     const res = await fetch(url);
     return { url, data: new Uint8Array(await res.arrayBuffer()) };
+  }
+
+  // Set the active temperament. The patch is applied by re-loading the current
+  // song (which re-reads the voices and recompiles against the patched pt); if
+  // nothing is loaded yet the selection is stored and applied on the next play.
+  public async setTemperament(key: string) {
+    this.selectedTemperament = key;
+
+    if (this.needsInit || !this.activeTape) {
+      return;
+    }
+
+    // Force a full reload (bypass the same-song restart shortcut) so the patch
+    // tape is sent and the voices are re-read + recompiled with the new tuning.
+    this.activeSongURL = '';
+    await this.playMusic(this.activeTape);
+  }
+
+  // RIM-load the patch tape for the selected temperament into pt, unless pt
+  // already holds it (pt persists in worklet memory across songs).
+  private async ensureTemperamentApplied() {
+    if (this.selectedTemperament === this.appliedTemperament) {
+      return;
+    }
+
+    let patch = this.patchTapes.get(this.selectedTemperament);
+    if (!patch) {
+      patch = await this.fetchTape(`tapes/temperaments/${this.selectedTemperament}.bin`);
+      this.patchTapes.set(this.selectedTemperament, patch);
+    }
+
+    // Transfer a disposable copy so the cached patch buffer is not detached.
+    const sendData = new Uint8Array(patch.data);
+    this.pdp1Audio!.port.postMessage({
+      type: 'set-temperament',
+      tape: { url: patch.url, data: sendData },
+    } as SetTemperamentMessage, [sendData.buffer]);
+
+    this.appliedTemperament = this.selectedTemperament;
   }
 
   private addLogs(logs: string[]) {
