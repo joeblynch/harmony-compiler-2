@@ -45,6 +45,13 @@ export class AudioClient {
 
   constructor() {
     this.recompileButtonEl.addEventListener('click', this.onRecompileButton);
+    // Enter in the test-word (tempo) field recompiles, like clicking the button.
+    this.twInputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        this.onRecompileButton();
+      }
+    });
   }
 
   public async playMusic(musicTapeInfo: MusicTapeInfo) {
