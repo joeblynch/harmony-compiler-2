@@ -290,9 +290,9 @@ button:disabled {
 .pitch-group {
   flex-basis: 100%;          /* always its own line, below the Temperament: row */
   display: flex;
+  justify-content: flex-end; /* right-align the Pitch: label + checkboxes */
   align-items: center;
   gap: 0.5em;
-  font-size: 0.9em;
 }
 
 .tuning-opt {
