@@ -5,7 +5,7 @@
 An initial run of research was done with research mode enabled on https://claude.ai. The generated report was then copied into this repo for reference.
 
 **Prompt:**
-> Research historical Baroque temperaments and others that are relevant to Baroque music. Our primary output should be a markdown table with the equal temperament note frequencies alongside the alternate note frequencies of the each tuning.
+> Research historical Baroque temperaments and others that are relevant to Baroque music. Our primary output should be a markdown table with the equal temperament note frequencies alongside the alternate note frequencies of each other tuning.
 
 [Generated research report](./research.md)
 
@@ -21,7 +21,7 @@ Next a Python script was created to generate RIM patch tapes to load the researc
 
 <details>
 <summary>Claude's Plan (click to expand)</summary>
-<pre>
+<pre style="text-wrap: wrap;">
 # Plan: `pdp1m13/temperament/gen_patch.py` — temperament patch-tape generator
 
 ## Context
@@ -137,7 +137,7 @@ Claude prompted back a question of if we should load a temperament tape generate
 
 <details>
 <summary>Claude's Plan (click to expand)</summary>
-<pre>
+<pre style="text-wrap: wrap;">
 # Plan: UI dropdown for selecting temperament
 
 ## Context
