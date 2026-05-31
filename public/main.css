@@ -33,6 +33,10 @@ main {
   box-sizing: border-box;
 }
 
+.ui-label {
+  font-weight: 300;
+}
+
 button {
   padding: 0.3em 0.5em;
   font-family: "Kanit", sans-serif;
