@@ -21,7 +21,6 @@
         </div>
       </div>
       <div id="logs-header">
-        <div id="logs-label">PDP-1 logs:</div>
         <button id="upload">upload</button>
       </div>
       <div id="temperament-control">
@@ -41,9 +40,17 @@
           <option value="pythagorean">Pythagorean</option>
           <option value="just">Just (C major)</option>
         </select>
+        <span class="pitch-group">
+          Pitch:
+          <label class="tuning-opt"><input type="checkbox" id="chm-checkbox" /> CHM offset</label>
+          <label class="tuning-opt"><input type="checkbox" id="a415-checkbox" /> A415</label>
+        </span>
       </div>
       <ul id="playlist"></ul>
-      <div id="logs"></div>
+      <div id="logs-pane">
+        <div id="logs-label">PDP-1 logs:</div>
+        <div id="logs"></div>
+      </div>
     </main>
     <script src="scripts/main.js"></script>
   </body>

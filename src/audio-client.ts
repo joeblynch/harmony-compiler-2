@@ -33,11 +33,14 @@ export class AudioClient {
   private activeSongURL = '';
   private activeTape: MusicTapeInfo | null = null;
   private stoppedResolve: null | ((value: unknown) => void) = null;
-  // The temperament chosen in the UI vs. the one currently patched into the
-  // worklet's frequency table (pt). pt persists across songs, so a patch tape is
-  // only (re)applied when these differ. After init(), pt holds the ROM (equal) table.
+  // The tuning chosen in the UI (temperament + pitch reference + CHM
+  // compensation) vs. the variant currently patched into the worklet's
+  // frequency table (pt). pt persists across songs, so a patch tape is only
+  // (re)applied when these differ. After init(), pt holds the ROM (equal-440) table.
   private selectedTemperament = 'equal';
-  private appliedTemperament: string | null = null;
+  private chmEnabled = false;
+  private pitchA = 440;
+  private appliedVariant: string | null = null;
   private patchTapes = new Map<string, DataTape>();
 
   constructor() {
@@ -91,8 +94,8 @@ export class AudioClient {
 
     this.playing = false;
     this.compiled = false;
-    // A fresh readIn of the player ROM leaves the equal-tempered table in pt.
-    this.appliedTemperament = 'equal';
+    // A fresh readIn of the player ROM leaves the equal-tempered (440) table in pt.
+    this.appliedVariant = 'equal-440';
 
     this.audioContext = audioContext = new AudioContext();
 
@@ -222,33 +225,50 @@ export class AudioClient {
     return { url, data: new Uint8Array(await res.arrayBuffer()) };
   }
 
-  // Set the active temperament. The patch is applied by re-loading the current
-  // song (which re-reads the voices and recompiles against the patched pt); if
-  // nothing is loaded yet the selection is stored and applied on the next play.
+  // Tuning controls. Each updates state then re-applies to the active song (a
+  // full reload, so the voices are re-read and recompiled against the patched
+  // pt). With no worklet/song yet, the selection applies on the next play.
   public async setTemperament(key: string) {
     this.selectedTemperament = key;
+    await this.reapplyTuning();
+  }
 
+  public async setChm(enabled: boolean) {
+    this.chmEnabled = enabled;
+    await this.reapplyTuning();
+  }
+
+  public async setA415(enabled: boolean) {
+    this.pitchA = enabled ? 415 : 440;
+    await this.reapplyTuning();
+  }
+
+  // Composite key identifying the patch tape: <temperament>-<pitchA>[-chm].
+  private variantKey(): string {
+    return `${this.selectedTemperament}-${this.pitchA}${this.chmEnabled ? '-chm' : ''}`;
+  }
+
+  private async reapplyTuning() {
     if (this.needsInit || !this.activeTape) {
       return;
     }
-
-    // Force a full reload (bypass the same-song restart shortcut) so the patch
-    // tape is sent and the voices are re-read + recompiled with the new tuning.
+    // Force a full reload (bypass the same-song restart shortcut).
     this.activeSongURL = '';
     await this.playMusic(this.activeTape);
   }
 
-  // RIM-load the patch tape for the selected temperament into pt, unless pt
-  // already holds it (pt persists in worklet memory across songs).
+  // RIM-load the selected variant's patch tape into pt, unless pt already holds
+  // it (pt persists in worklet memory across songs).
   private async ensureTemperamentApplied() {
-    if (this.selectedTemperament === this.appliedTemperament) {
+    const key = this.variantKey();
+    if (key === this.appliedVariant) {
       return;
     }
 
-    let patch = this.patchTapes.get(this.selectedTemperament);
+    let patch = this.patchTapes.get(key);
     if (!patch) {
-      patch = await this.fetchTape(`tapes/temperaments/${this.selectedTemperament}.bin`);
-      this.patchTapes.set(this.selectedTemperament, patch);
+      patch = await this.fetchTape(`tapes/temperaments/${key}.bin`);
+      this.patchTapes.set(key, patch);
     }
 
     // Transfer a disposable copy so the cached patch buffer is not detached.
@@ -258,7 +278,7 @@ export class AudioClient {
       tape: { url: patch.url, data: sendData },
     } as SetTemperamentMessage, [sendData.buffer]);
 
-    this.appliedTemperament = this.selectedTemperament;
+    this.appliedVariant = key;
   }
 
   private addLogs(logs: string[]) {

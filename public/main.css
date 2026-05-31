@@ -257,21 +257,82 @@ button:disabled {
 
 #logs-header {
   display: flex;
+  justify-content: flex-end;
   grid-row: 1;
   grid-column: 2;
 }
 
+#logs-pane {
+  grid-row: 3;
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 #logs-label {
-  align-self: end;
-  flex: 1;
+  padding-bottom: 0.2em;
 }
 
 #temperament-control {
   grid-row: 2;
   grid-column: 2;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4em 0.5em;
+}
+
+.pitch-group {
+  flex-basis: 100%;          /* always its own line, below the Temperament: row */
+  display: flex;
   align-items: center;
   gap: 0.5em;
+  font-size: 0.9em;
+}
+
+.tuning-opt {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* themed checkbox: panel-bg box, filled with link-color + a drawn check when on */
+.tuning-opt input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1em;
+  height: 1em;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  background-color: var(--panel-bg-color);
+  border: 1px solid hsl(var(--theme-hue), 42%, 25%);
+  border-radius: 3px;
+}
+
+.tuning-opt input[type="checkbox"]:checked {
+  background-color: var(--link-color);
+  border-color: var(--link-color);
+}
+
+.tuning-opt input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 0.28em;
+  top: 0.06em;
+  width: 0.22em;
+  height: 0.45em;
+  border: solid var(--bg-color);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.tuning-opt input[type="checkbox"]:focus-visible {
+  outline: 1px dotted currentColor;
+  outline-offset: 2px;
 }
 
 #temperament-select {
@@ -288,8 +349,7 @@ button:disabled {
 }
 
 #logs {
-  grid-row: 3;
-  grid-column: 2;
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -339,7 +399,7 @@ button:disabled {
     grid-column: 1;
   }
 
-  #logs {
+  #logs-pane {
     grid-row: 6;
     grid-column: 1;
   }

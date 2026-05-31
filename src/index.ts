@@ -37,5 +37,10 @@ musicTapes.forEach((tape, i) => {
 const temperamentSelect = document.getElementById('temperament-select') as HTMLSelectElement;
 temperamentSelect.addEventListener('change', () => audioClient.setTemperament(temperamentSelect.value));
 
+const chmCheckbox = document.getElementById('chm-checkbox') as HTMLInputElement;
+const a415Checkbox = document.getElementById('a415-checkbox') as HTMLInputElement;
+chmCheckbox.addEventListener('change', () => audioClient.setChm(chmCheckbox.checked));
+a415Checkbox.addEventListener('change', () => audioClient.setA415(a415Checkbox.checked));
+
 initScrollFade();
 initUpload(onSongClick);

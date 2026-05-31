@@ -42,6 +42,12 @@ PT_LEN = 64                   # pt[0..63] = rest, B0 .. C#6
 C4_INC = 12002                # shipped middle-C (C4) increment -> the pitch anchor
 C4_HZ = 261.6256              # middle C in Hz (A4=440 equal-tempered); display only
 
+# The worklet always slows playback by this factor to model the real Computer
+# History Museum PDP-1's CPU (lowers pitch ~7%). MUST match CHM_CPU_FACTOR in
+# src/audio-worklet/pdp1-audio.ts -- the `--cpuFactor chm` compensation only
+# lands on true concert pitch if the two values agree.
+CHM_CPU_FACTOR = 0.92559
+
 # Tape defaults (from public/tapes/BWV592-3.bin; the other .bin tapes agree).
 DEFAULT_BOOT = 0o2304         # `not` scratch buffer -- safe, see validate_boot_addr()
 DEFAULT_LEADER = 256          # blank 0x00 bytes before the data
@@ -165,19 +171,20 @@ def note_for_index(idx):
     return (s, o)
 
 
-def increment(semitone, octave, dev_cents):
+def increment(semitone, octave, dev_cents, scale=1.0):
     """C-anchored phase increment for one pitch.
 
-    increment = round( 12002 * 2 ** ( (100*s + dev) / 1200 + (octave - 4) ) )
+    increment = round( 12002 * scale * 2 ** ( (100*s + dev) / 1200 + (octave - 4) ) )
 
-    Anchored so C4 (s=0, dev=0, octave=4) == 12002, identical to the shipped
-    ROM table, in every temperament.
+    At scale=1 this is C4-anchored so C4 (s=0, dev=0, octave=4) == 12002,
+    identical to the shipped ROM table. `scale` = (pitchA/440) / cpuFactor
+    retunes the reference pitch and/or pre-corrects for a slow CPU.
     """
     cents_above_c = 100 * semitone + dev_cents
-    return round(C4_INC * 2 ** (cents_above_c / 1200 + (octave - 4)))
+    return round(C4_INC * scale * 2 ** (cents_above_c / 1200 + (octave - 4)))
 
 
-def build_table(dev):
+def build_table(dev, scale=1.0):
     """Build the 64-word pt table for a temperament's cents-deviation vector."""
     table = []
     for idx in range(PT_LEN):
@@ -186,7 +193,7 @@ def build_table(dev):
             table.append(0)  # rest -- phase never advances, voice silent
             continue
         s, o = note
-        w = increment(s, o, dev[s])
+        w = increment(s, o, dev[s], scale)
         if not (0 <= w < (1 << 17)):
             raise ValueError(
                 "increment for index %d (semitone %d, octave %d) = %d is not a "
@@ -197,8 +204,9 @@ def build_table(dev):
 
 
 def freq_hz(inc):
-    """Approximate sounding frequency of an increment (display only)."""
-    return inc / C4_INC * C4_HZ
+    """Pitch as heard on the CHM-speed player (display only). The worklet always
+    applies CHM_CPU_FACTOR, so this is the actual sounding frequency."""
+    return inc / C4_INC * C4_HZ * CHM_CPU_FACTOR
 
 
 def note_label(idx):
@@ -287,19 +295,22 @@ def build_tape(table, base, leader, trailer):
 # --------------------------------------------------------------------------
 # Listing (--lst)
 # --------------------------------------------------------------------------
-def format_listing(key, base, table):
+def format_listing(key, base, table, pitch_a, cpu_label, scale):
     display, dev = TEMPERAMENTS[key]
     bootstrap = build_bootstrap(base)
     lines = []
     lines.append("/ %s (%s)" % (key, display))
-    lines.append("/ bootstrap @ %05o, patches pt @ %05o..%05o, C4-anchored (C4=%d)"
-                 % (base, PT_BASE, PT_BASE + PT_LEN - 1, C4_INC))
+    lines.append("/ bootstrap @ %05o, patches pt @ %05o..%05o"
+                 % (base, PT_BASE, PT_BASE + PT_LEN - 1))
+    lines.append("/ pitchA=%g  cpuFactor=%s  scale=%.5f  ->  C4 increment=%d"
+                 % (pitch_a, cpu_label, scale, table[38]))
     lines.append("")
     lines.append("/ --- RIM bootstrap (loaded into bank 0, started by the RIM jmp) ---")
     for addr, word, mnem in bootstrap:
         lines.append("  %05o  %06o  %s" % (addr, word, mnem))
     lines.append("")
-    lines.append("/ --- frequency table written to pt (idx  addr  note   Hz      incr) ---")
+    lines.append("/ --- frequency table written to pt (Hz = as heard on the CHM-speed player) ---")
+    lines.append("/ idx  addr  note   Hz       incr")
     for idx, w in enumerate(table):
         hz = freq_hz(w)
         lines.append("  %2d  %05o  %-4s  %8.2f  %06o"
@@ -408,47 +419,47 @@ def verify(base, leader, trailer):
     """Run all self-checks across every temperament. Returns True on success."""
     ok = True
 
-    # 1. Equal-temperament regression against the shipped ROM table.
-    eq = build_table(TEMPERAMENTS["equal"][1])
+    # 1. Equal-temperament regression against the shipped ROM table (scale=1).
+    eq = build_table(TEMPERAMENTS["equal"][1], 1.0)
     diffs = [abs(a - b) for a, b in zip(eq, SHIPPED_PT)]
     maxdiff = max(diffs)
     worst = diffs.index(maxdiff)
-    print("equal vs shipped ROM table: max |diff| = %d (index %d, %s)"
+    print("equal vs shipped ROM table (440 / cpu 1): max |diff| = %d (index %d, %s)"
           % (maxdiff, worst, note_label(worst)))
     if maxdiff > 1:
         print("  FAIL: equal preset deviates from ROM by more than 1", file=sys.stderr)
         ok = False
 
-    # 2/3/4. Per-temperament: range guard, decode round-trip, CPU simulation.
+    # 2/3/4. For each shipped variant and temperament: range guard (build_table
+    # raises on >17-bit), decode round-trip, and full CPU simulation.
+    variants = [
+        ("440",     440.0, 1.0),
+        ("415",     415.0, 1.0),
+        ("440-chm", 440.0, CHM_CPU_FACTOR),
+        ("415-chm", 415.0, CHM_CPU_FACTOR),
+    ]
+    rim = assemble_rim(build_bootstrap(base), base)
     overall_max = 0
-    for key, (display, dev) in TEMPERAMENTS.items():
-        table = build_table(dev)              # raises on >17-bit (range guard)
-        overall_max = max(overall_max, max(table))
+    for vlabel, pitch_a, factor in variants:
+        scale = (pitch_a / 440.0) / factor
+        for key, (display, dev) in TEMPERAMENTS.items():
+            table = build_table(dev, scale)        # range guard
+            overall_max = max(overall_max, max(table))
 
-        tape = build_tape(table, base, leader, trailer)
+            tape = build_tape(table, base, leader, trailer)
+            words = decode_words(tape)
+            if words[:len(rim)] != rim or words[len(rim):] != table:
+                print("  FAIL %s-%s: tape did not round-trip" % (key, vlabel), file=sys.stderr)
+                ok = False
 
-        # decode round-trip: counted words = RIM section + the 64 data words
-        words = decode_words(tape)
-        rim = assemble_rim(build_bootstrap(base), base)
-        if words[:len(rim)] != rim:
-            print("  FAIL %s: RIM section did not round-trip" % key, file=sys.stderr)
-            ok = False
-        if words[len(rim):] != table:
-            print("  FAIL %s: data section did not round-trip" % key, file=sys.stderr)
-            ok = False
+            patched = [simulate(tape).get(PT_BASE + i, None) for i in range(PT_LEN)]
+            if patched != table:
+                print("  FAIL %s-%s: CPU simulation mismatch" % (key, vlabel), file=sys.stderr)
+                ok = False
 
-        # end-to-end CPU simulation
-        mem = simulate(tape)
-        patched = [mem.get(PT_BASE + i, None) for i in range(PT_LEN)]
-        if patched != table:
-            bad = next(i for i in range(PT_LEN) if patched[i] != table[i])
-            print("  FAIL %s: simulated pt[%d] = %r, expected %06o"
-                  % (key, bad, patched[bad], table[bad]), file=sys.stderr)
-            ok = False
-
-    print("all %d temperaments: range guard, decode round-trip, and CPU "
-          "simulation passed" % len(TEMPERAMENTS))
-    print("max increment across all temperaments = %d (0o%o), 2^17 = %d"
+    print("all %d temperaments x %d variants: range guard, round-trip, CPU sim passed"
+          % (len(TEMPERAMENTS), len(variants)))
+    print("max increment across all variants = %d (0o%o), 2^17 = %d"
           % (overall_max, overall_max, 1 << 17))
     print("OK" if ok else "FAILED")
     return ok
@@ -457,6 +468,17 @@ def verify(base, leader, trailer):
 # --------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------
+def parse_cpu_factor(val):
+    """--cpuFactor: a positive float, or 'chm'/'CHM' -> the CHM CPU factor.
+    Returns (factor, label) where label feeds the auto-generated filename."""
+    if val.lower() == "chm":
+        return CHM_CPU_FACTOR, "chm"
+    f = float(val)
+    if f <= 0:
+        raise argparse.ArgumentTypeError("cpuFactor must be positive")
+    return f, "%g" % f
+
+
 def validate_boot_addr(base):
     """Reject boot addresses that would clobber the resident player or escape
     bank 0. The bootstrap occupies [base, base+8)."""
@@ -483,7 +505,13 @@ def main(argv=None):
     p.add_argument("temperament", nargs="?", choices=sorted(TEMPERAMENTS),
                    help="temperament preset to generate")
     p.add_argument("-o", "--out", metavar="PATH",
-                   help="output tape path (default: <temperament>.bin)")
+                   help="output tape path (default: <temperament>-<pitchA>[-chm].bin)")
+    p.add_argument("--pitchA", type=float, default=440.0, metavar="HZ",
+                   help="reference pitch for A4 in Hz (default 440)")
+    p.add_argument("--cpuFactor", type=parse_cpu_factor, default=(1.0, "1"),
+                   metavar="F",
+                   help="CPU speed to compensate for: a multiplier or chm|CHM "
+                        "(default 1; 'chm' pre-corrects for the slow CHM PDP-1)")
     p.add_argument("--leader", type=int, default=DEFAULT_LEADER,
                    help="blank leader bytes (default %d)" % DEFAULT_LEADER)
     p.add_argument("--trailer", type=int, default=DEFAULT_TRAILER,
@@ -510,19 +538,24 @@ def main(argv=None):
     if not args.temperament:
         p.error("a temperament is required (or use --list / --verify)")
 
-    table = build_table(TEMPERAMENTS[args.temperament][1])
+    factor, cpu_label = args.cpuFactor
+    scale = (args.pitchA / 440.0) / factor
+    table = build_table(TEMPERAMENTS[args.temperament][1], scale)
 
     if args.lst:
-        print(format_listing(args.temperament, args.boot_addr, table))
+        print(format_listing(args.temperament, args.boot_addr, table,
+                             args.pitchA, cpu_label, scale))
         if args.out is None:
             return 0  # listing only -- don't write a tape unless -o is given
 
-    out = args.out or ("%s.bin" % args.temperament)
+    # Auto-name: <temperament>-<pitchA>[-chm | -cf<factor>].bin
+    suffix = "" if cpu_label == "1" else ("-chm" if cpu_label == "chm" else "-cf" + cpu_label)
+    out = args.out or ("%s-%g%s.bin" % (args.temperament, args.pitchA, suffix))
     tape = build_tape(table, args.boot_addr, args.leader, args.trailer)
     with open(out, "wb") as f:
         f.write(tape)
-    print("wrote %s (%d bytes): %s, bootstrap @ 0o%o, leader %d / trailer %d"
-          % (out, len(tape), args.temperament, args.boot_addr, args.leader, args.trailer),
+    print("wrote %s (%d bytes): %s, pitchA=%g cpuFactor=%s scale=%.5f, bootstrap @ 0o%o"
+          % (out, len(tape), args.temperament, args.pitchA, cpu_label, scale, args.boot_addr),
           file=sys.stderr)
     return 0
 
