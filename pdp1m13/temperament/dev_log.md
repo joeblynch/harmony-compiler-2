@@ -4,8 +4,109 @@
 
 An initial run of research was done with research mode enabled on https://claude.ai. The generated report was then copied into this repo for reference.
 
-**Prompt:**
-> Research historical Baroque temperaments and others that are relevant to Baroque music. Our primary output should be a markdown table with the equal temperament note frequencies alongside the alternate note frequencies of each other tuning.
+
+_I'd just link to the chat log, but chats with research runs can't be shared for some reason. Reproducing below._
+
+**user:** Please explain even temperament versus baroque temperament
+
+**assistant:**
+<details>
+<summary>Claude's response (click to expand)</summary>
+So "even temperament" is almost certainly what usually gets called **equal temperament**, and "baroque temperament" isn't really one thing—it's a whole family of older tuning systems. The gap between them is one of the genuinely great rabbit holes in music, so let me actually lay it out.
+
+The core problem every tuning system is wrestling with: you can't make all the intervals pure at the same time. The math just won't allow it. Stack twelve perfect fifths and you *should* land back on your starting note seven octaves up—but you overshoot by a hair (the Pythagorean comma, about 23 cents). Pure fifths and pure thirds are fighting each other the whole time. So every tuning system is really one decision: *where do you hide the error?*
+
+**Equal temperament** (today's default) hides it perfectly evenly. Every semitone is exactly the same size—the twelfth root of two. The payoff is total freedom: every key sounds identical in character, you can modulate anywhere, transpose anything, nothing's ever unplayable. The cost is that *nothing's* truly pure either. The fifths are a touch narrow (you'd never clock it), but the major thirds run noticeably sharp—about 14 cents. Your ear's just been trained since birth to shrug it off.
+
+**Baroque temperaments** made the opposite bet. Two big branches:
+
+- *Meantone* (Renaissance into the early Baroque) flattened the fifths so the major thirds came out genuinely *pure*—sweet, beatless, gorgeous in the home keys. But all that hidden error piles up in one spot and creates a "wolf" interval so ugly you just couldn't play in distant keys.
+- *Well temperaments* (Werckmeister, Kirnberger, Vallotti) smeared the error around unevenly but cleverly, so no key was off-limits—but every key ended up with its own *color.* C major sounded calm and pure; something like F-sharp major sounded tense, bright, almost exotic. Keys had personalities.
+
+That last part is what people get nostalgic about. Bach's *Well-Tempered Clavier*—running through all 24 keys—was basically a victory lap for a tuning where every key worked *and* every key felt distinct. (Fair warning: there's a real, unsettled scholarly fight over which temperament he actually meant. "Well-tempered" almost certainly did *not* mean equal temperament, but the specifics are still argued over.)
+
+So the whole thing comes down to uniformity versus character. Equal temperament handed us the freedom to wander anywhere harmonically—it's part of why Chopin sounds like Chopin, why one piano can serve every piece ever written—but the price was flattening every key into the same emotional palette and roughing up our consonances a little. Some musicians genuinely think we lost something. Though here's the kicker: equal temperament was never total anyway. String players and singers still instinctively bend toward pure intervals, so that old sweetness never fully died—it just went underground.
+</details>
+
+**user:** What are the details of the temperament for WTC?
+
+**assistant:**
+<details>
+<summary>Claude's response (click to expand)</summary>
+<details>
+<summary><em>thinking: Hunting down historical temperament specifications for precision</em></summary>
+<em>Joe is asking about the specific temperament Bach used for the Well-Tempered Clavier, which is actually a contested area in musicology. The Bradley Lehman hypothesis from 2005 is probably the most well-known recent contribution to this debate, published in Early Music, but there's genuine scholarly disagreement here about what the historical evidence actually supports.
+
+The fundamental issue is that Bach never documented his tuning method—the WTC has no written instructions. "Well-tempered" is really just a category describing circulating temperaments where all 24 keys work but each has its own character, which is different from equal temperament where all keys sound identical.
+
+Several historical temperaments get proposed as candidates: Werckmeister III distributes the Pythagorean comma across four specific fifths and is probably the most commonly cited; Kirnberger III, designed by one of Bach's students, places the syntonic comma across five fifths with one pure third; Vallotti uses a symmetric approach with six narrowed fifths; and Young's temperaments came later but are also well-tempered systems. Then there's Lehman's 2005 argument that the decorative squiggle on the WTC title page is actually an encoded tuning diagram meant to be read upside down.
+Lehman interpreted it as specifying a particular temperament with five tempered fifths and three pure ones, which generated significant scholarly debate—it's ingenious but widely contested as over-interpreting an ornamental mark. The reality is there's no consensus at all; Bach may have used different tunings at different times, tuned by ear without matching any formal system, or simply expected players to use whatever good circulating temperament was available to them.
+
+Now I'm working through the technical specifics of Werckmeister III, which is based on the Pythagorean comma of about 23.46 cents, with four particular fifths narrowed by a quarter of that comma each. For Kirnberger III, one of the fifths absorbs the schisma to account for the difference between the syntonic and Pythagorean commas. Vallotti uses a symmetric approach with six tempered fifths centered around D and six pure ones, making it a popular choice for modern Baroque performance. I'm confident about these technical details, though the historical naming conventions for these temperaments are genuinely confusing and worth double-checking.
+
+I'm weighing whether to search for verification—the specifics of which temperament belongs to which theorist and exact cent values are the kind of details I could misremember, and there might be newer scholarship since the mid-2000s. But this is fundamentally stable historical knowledge rather than something that changes with current events, and the core answer I'd give ("we're not entirely certain, here are the main candidates") doesn't depend on facts that are likely to have shifted. are subtly wrong, and Joe specifically asked for details—so I should do a few targeted searches to verify the exact cent values and historical specifics, especially to see if there's recent scholarship beyond my training data that would give a more current picture of the debate. I'll be selective though, focusing only on what matters for accuracy rather than exhaustively re-researching the whole topic. I need to actually search rather than second-guess myself—the Lehman debate specifically warrants checking where scholarship has landed since 2005. I'll run two targeted searches: one on Lehman's thesis itself, and another covering the main temperament candidates and current consensus, then keep it focused since Joe asked a straightforward question.</em>
+</details>
+
+Good — this is the rabbit hole I flagged, and it's one where I want to check my facts rather than freeze the debate at whatever year my memory stopped. Let me look.
+
+<details>
+<summary><em>thinking: Reconciling conflicting Werckmeister temperament sources</em></summary>
+<em>
+[web search: Bach Well-Tempered Clavier temperament Lehman 2005 title page squiggle]: 9 results
+
+
+I need to lock down the specific temperament formulas—Werckmeister III, Kirnberger III, and Vallotti—since Joe's looking for concrete details, and I want to double-check the exact fifth distributions and Lehman specifications to make sure I have the numbers right. I've got the core specs down for Werckmeister III, Kirnberger III, and Vallotti, but I'm second-guessing myself on the exact fifth assignments for Werckmeister III since the naming conventions are so muddled in the literature—one quick verification search should settle it without overdoing the research.</em>
+</details>
+
+One more — I want to verify the actual recipes for the main historical candidates, since the fifth-by-fifth specs are exactly the kind of detail my memory could fumble.Okay so here's the thing that makes this whole question kind of delicious: **there are no details, because Bach never wrote any down.** No tuning instructions, no recipe, nothing. The title page of Book 1 (1722) just says it works in all 24 keys and leaves you to figure out *how*. So "the temperament for the WTC" isn't a known fact — it's a 300-year-old detective case, and what I can give you is the list of suspects plus the most famous attempt to crack the code.
+
+The code-cracking attempt first, because it's wild. In 2005, a harpsichordist named Bradley Lehman published two articles in *Early Music* arguing that the decorative squiggle Bach doodled across the top of the title page is actually a tuning diagram in disguise. He noticed a little "C" attached to the rightmost loop, flipped the whole thing upside down, and read the loops as instructions — fancy loops mean tempered fifths, plain loops mean pure ones. His baseline was the standard Baroque move of narrowing a fifth by 1/6 of a Pythagorean comma, with some fifths at 1/12 and some left pure. The result is gorgeous and gentle: C, G, D, A, E, B and F# major all sit close to equal temperament, while the remote flat keys get noticeably wider thirds, so F# major comes out kind of luminous and crystalline instead of sour. A lot of performers swear by it.
+
+But — and this is the fun part — it got absolutely worked over by other scholars. The November 2006 issue of Early Music ran several rebuttals; John O'Donnell argued the loops should be read chromatically rising from C, not as a cycle of fifths, and spotted what look like "Es" and "Dis" markings near the word "Das." Someone else proposed reading it as a 1/18-comma scheme entirely. And the brutal critique underneath all of it: the squiggle is appealing and plausible as a temperament prescription, but every reading rests on assumptions with no hard evidence. It's a Rorschach blot that happens to be in Bach's handwriting.
+
+So if you set the squiggle aside, here are the actual historical recipes people reach for — these I can give you exactly:
+
+- **Werckmeister III** (1691, the classic "Bach tuning" of the modern revival): mostly pure fifths, but C–G, G–D, D–A, and B–F# each get narrowed by 1/4 comma. Because the tempered fifths aren't consecutive, there's no wolf and all 12 keys are usable — Werckmeister literally flagged it as good for chromatic music, which is probably why it got glued to Bach's name.
+- **Kirnberger III** (1779, by an actual Bach student): four fifths along C–G–D–A–E narrowed by 1/4 *syntonic* comma, which makes the C–E major third dead pure, with one leftover fifth absorbing a tiny schisma. It's prized for unusually pure near-key thirds, and Kirnberger claimed it matched Bach's own preference — a claim scholars have disputed ever since.
+- **Vallotti** (the smooth, symmetric crowd-pleaser): six fifths in a row — F–C–G–D–A–E–B — each narrowed, the other six pure. Heads up though: the version everyone now calls "Vallotti" is technically a misattribution — the modern one uses 1/6 of a Pythagorean comma, while Vallotti's original used the syntonic comma with a schisma fifth.
+
+Honestly? My read is that the search for *the* answer is a bit of a fool's errand, and a few scholars quietly think so too. Bach almost certainly tuned by ear, probably tweaked it depending on the instrument and the day, and would've found the whole "which named system did he use" question kind of beside the point. The piece works in any decent circulating temperament — that was the *whole brag*. Which means the real answer to "what's the temperament for the WTC" might just be: a good one. Pick your flavor of spicy.
+</details>
+</details>
+
+**user:**
+
+Please research those historical recipes and others that are relevant to baroque music. Our primary output should be a markdown table with the even temperament notes on one axis and the alternate notes of the each tuning in the other
+
+**assistant:**
+
+Before I dig in, two quick things so the table comes out exactly how you want it:
+
+1. **What reference pitch / format for the cell values?** Options: cents deviation from equal temperament (e.g. +3.9, -2.0), or absolute frequencies in Hz (which needs a fixed A — A=440, A=415 "Baroque pitch," or both), or both cents and Hz side by side.
+
+2. **Which temperaments should make the cut?** I'm planning Equal (the reference column) plus Werckmeister III, Kirnberger III, Vallotti, Young II, Kellner's "Bach," and quarter-comma meantone as a Baroque-era anchor. Want me to add/drop any — e.g. the Lehman "Bach 1722," Werckmeister IV/V, Kirnberger II, Pythagorean, or just-intonation-in-C?
+
+Answer those and I'll start the deep dive.
+
+**user:**
+1. Let's go with frequencies
+2. All that look relevant to baroque music
+
+**assistant:**
+
+Just one thing I need to pin down before I start, since you said frequencies: I need to fix the reference A so the numbers are actually meaningful.
+
+1. Which pitch standard — modern **A=440 Hz**, Baroque **A=415 Hz** (roughly a semitone lower, the most common "historically informed" choice), or both as separate tables?
+
+2. And should I anchor each temperament so its **C is the same across all of them** (cleaner for comparing key-color, since C is the home base), or anchor on **A** (which keeps the reference note literally identical but makes the tempered notes shift around it)?
+
+Give me those two and I'll launch the deep dive — I'll pull frequencies for every Baroque-relevant temperament I can stand up properly (Werckmeister III/IV/V, Kirnberger II & III, Vallotti, Young II, Kellner, quarter-comma meantone, Pythagorean, maybe Silbermann and just intonation in C), with equal temperament as the reference column.
+
+**user:**
+1. Modern as standard
+2. Let's try with C
+
+**assistant:**
 
 [Generated research report](./research.md)
 
