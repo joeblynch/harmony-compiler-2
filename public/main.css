@@ -281,18 +281,21 @@ button:disabled {
 #temperament-control {
   grid-row: 2;
   grid-column: 2;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: end;
   align-items: center;
-  gap: 0.4em 0.5em;
+  gap: 0.4em 0.8em;
+}
+
+#temperament-control > .ui-label {
+  text-align: right;        /* labels in the left column, right-aligned */
 }
 
 .pitch-group {
-  flex-basis: 100%;          /* always its own line, below the Temperament: row */
   display: flex;
-  justify-content: flex-end; /* right-align the Pitch: label + checkboxes */
   align-items: center;
-  gap: 0.5em;
+  gap: 1em;
 }
 
 .tuning-opt {
@@ -340,7 +343,7 @@ button:disabled {
 }
 
 #temperament-select {
-  flex: 1;
+  justify-self: stretch;
   min-width: 0;
   padding: 0.25em 0.4em 0.35em;
   font-family: "Kanit", sans-serif;
