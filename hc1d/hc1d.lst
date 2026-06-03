@@ -1,0 +1,3797 @@
+
+       harmony compiler  phase 1  : 5/21/63                               Page 1
+
+
+    1 00100 000001       harmony compiler  phase 1  : 5/21/63
+UD undefined             ^
+UD undefined                     ^
+UD undefined                               ^
+IC illegal char                                     ^
+IC illegal blank                                     ^
+IC in expression                                      ^
+    2                   /Form A-31276490732-3b/21
+    3                   / retyped 060321
+    4                   
+    5       000000      0/
+    6                   
+    7                   /macros  1/6/62  (as amended by Acts of 1/15/62 and 4/30/62)
+    8                   
+    9                   define	load A
+   10                   	lac A
+   11                   	termin
+   12                   
+   13                   define	store A
+   14                   	dac A
+   15                   	termin
+   16                   
+   17                   define	addi A
+   18                   	add A
+   19                   	termin
+   20                   
+   21                   define	goto T
+   22                   	jmp T
+   23                   	termin
+   24                   
+   25                   define	govia P
+   26                   	jmp i P
+   27                   	termin
+   28                   
+   29                   define	subt A
+   30                   	sub A
+   31                   	termin
+   32                   
+   33                   define	zero A
+   34                   	dzm A
+   35                   	termin
+   36                   
+   37                   define	step1 J
+   38                   	idx J
+   39                   	termin
+   40                   
+   41                   define	call S
+   42                   	jda S
+   43                   	termin
+   44                   
+   45                   define	band U
+   46                   	and U
+   47                   	termin
+   48                   
+   49                   define	halt
+   50                   	hlt
+   51                   	termin
+
+       harmony compiler  phase 1  : 5/21/63                               Page 2
+
+
+   52                   
+   53                   define	clear
+   54                   	cla
+   55                   	termin
+   56                   
+   57                   define	comple
+   58                   	cma
+   59                   	termin
+   60                   
+   61                   define	halve
+   62                   	sar 1s
+   63                   	termin
+   64                   
+   65                   define	x2to1
+   66                   	ral 1s
+   67                   	termin
+   68                   
+   69                   define	x2to6
+   70                   	ral 6s
+   71                   	termin
+   72                   
+   73                   define	x2to7
+   74                   	ral 7s
+   75                   	termin
+   76                   
+   77                   define	x2to3
+   78                   	ral 3s
+   79                   	termin
+   80                   
+   81                   define	exit P
+   82                   	jmp
+   83                   	termin
+   84                   
+   85                   define	move A,B
+   86                   	lac A
+   87                   	dac B
+   88                   	termin
+   89                   
+   90                   define	sett A,B
+   91                   	lac (B
+   92                   	dac A
+   93                   	termin
+   94                   
+   95                   define	trze T
+   96                   	sza i
+   97                   	jmp T
+   98                   	termin
+   99                   
+  100                   define	trnz T
+  101                   	sza
+  102                   	jmp T
+  103                   	termin
+  104                   
+  105                   define	trpl T
+  106                   	sma
+  107                   	jmp T
+  108                   	termin
+
+       harmony compiler  phase 1  : 5/21/63                               Page 3
+
+
+  109                   
+  110                   define	trmi T
+  111                   	spa
+  112                   	jmp T
+  113                   	termin
+  114                   
+  115                   define	trel A,T
+  116                   	sad A
+  117                   	jmp T
+  118                   	termin
+  119                   
+  120                   define	trnl A,T
+  121                   	sas A
+  122                   	jmp T
+  123                   	termin
+  124                   
+  125                   define	write P
+  126                   	law P
+  127                   	jda wr
+  128                   	termin
+  129                   
+  130                   define	type Q
+  131                   	lio Q
+  132                   	tyo
+  133                   	termin
+  134                   
+  135                   define	ftrel A,T
+  136                   	trel A,T
+  137                   	termin
+  138                   
+  139                   define	compla U
+  140                   	lac (U
+  141                   	jda er
+  142                   	termin
+  143                   
+  144                   define	error U
+  145                   	lac (U	
+  146                   	jda er1
+  147                   	termin
+  148                   
+  149                   define	lookup V
+  150                   	add (V
+  151                   	dap .+1
+  152                   	lac
+  153                   	termin
+  154                   
+  155                   define	feed N
+  156                   	law i N
+  157                   	jda fee
+  158                   	termin
+  159                   
+  160                   define	step J,I
+  161                   	lac J
+  162                   	add I
+  163                   	dac J
+  164                   	termin
+  165                   
+
+       harmony compiler  phase 1  : 5/21/63                               Page 4
+
+
+  166                   define	stepa J,I
+  167                   	law I
+  168                   	add J
+  169                   	dac J
+  170                   	termin
+  171                   
+  172                   define	istepa J,I
+  173                   	law i I
+  174                   	add J
+  175                   	dac J
+  176                   	termin
+  177                   
+  178                   define	grow A,V,C
+  179                   	lac A
+  180                   	add (V
+  181                   	dac C
+  182                   	termin
+  183                   
+  184                   define	tles C,T
+  185                   	sub C
+  186                   	spa
+  187                   	jmp T
+  188                   	termin
+  189                   
+  190                   define	tlesc C,T
+  191                   	sub (C
+  192                   	spa
+  193                   	jmp T
+  194                   	termin
+  195                   
+  196                   define	tgrel C,T
+  197                   	sub C
+  198                   	sma
+  199                   	jmp T
+  200                   	termin
+  201                   
+  202                   define	tgrec C,T
+  203                   	sub (C
+  204                   	sma+sza-skp
+  205                   	jmp T
+  206                   	termin
+  207                   
+  208                   define	test0 Y,Z
+  209                   	lac Y
+  210                   	sza i
+  211                   	jmp Z
+  212                   	termin
+  213                   
+  214                   define	test1 Y,Z
+  215                   	lac Y
+  216                   	sza
+  217                   	jmp Z
+  218                   	termin
+  219                   
+  220                   define	testp Y,Z
+  221                   	lac Y
+  222                   	sma
+
+       harmony compiler  phase 1  : 5/21/63                               Page 5
+
+
+  223                   	jmp Z
+  224                   	termin
+  225                   
+  226                   define	testm Y,Z
+  227                   	lac Y
+  228                   	spa
+  229                   	jmp Z
+  230                   	termin
+  231                   
+  232                   define	testel Y,Z,A
+  233                   	lac Y
+  234                   	sad Z
+  235                   	jmp A
+  236                   	termin
+  237                   
+  238                   define	testnl Y,Z,A
+  239                   	lac Y
+  240                   	sas Z
+  241                   	jmp A
+  242                   	termin
+  243                   
+  244                   define	halfof V
+  245                   	lac V
+  246                   	sar 1s
+  247                   	dac V
+  248                   	termin
+  249                   
+  250                   define	double Q
+  251                   	lac Q
+  252                   	ral 1s
+  253                   	dac Q
+  254                   	termin
+  255                   
+  256                   define	dispat U
+  257                   	add (U
+  258                   	dap .+1
+  259                   	jmp i
+  260                   	termin
+  261                   
+  262                   define	diswit L,U
+  263                   	add (U
+  264                   	dap .+2
+  265                   	lac L
+  266                   	jmp i
+  267                   	termin
+  268                   
+  269                   define	putback U,Q
+  270                   	add (U
+  271                   	dap .+2
+  272                   	lac Q
+  273                   	dac
+  274                   	termin
+  275                   
+  276                   define	answer X
+  277                   	0
+  278                   	dap X
+  279                   	lac .-2
+
+       harmony compiler  phase 1  : 5/21/63                               Page 6
+
+
+  280                   	termin
+  281                   
+  282                   define	x10dec
+  283                   	ral 1s
+  284                   	dac t1
+  285                   	ral 2s
+  286                   	add t1
+  287                   	termin
+  288                   
+  289                   define	copy H,I,N
+  290                   	law H
+  291                   	dap .+3
+  292                   	law I
+  293                   	dap .+2
+  294                   	lac
+  295                   	dac
+  296                   	idx .-2
+  297                   	idx .-2
+  298                   	sas (dac I+N
+  299                   	jmp .-5
+  300                   	termin
+  301                   	
+  302                   define	search W,N,ERR
+  303                   	dac t1
+  304                   	law W
+  305                   	dap .+2
+  306                   	lac t1
+  307                   	sad
+  308                   	jmp .+5
+  309                   	idx .-2
+  310                   	sas (sad W+N
+  311                   	jmp .-5
+  312                   	jmp ERR
+  313                   	lac .-6
+  314                   	add (-sad-W
+  315                   	termin
+  316                   
+  317                   define	print F
+  318                   	lac F
+  319                   	rcl 6s
+  320                   	tyo
+  321                   	rcl 6s
+  322                   	tyo
+  323                   	rcl 6s
+  324                   	tyo
+  325                   	termin
+  326                   
+  327                   /wr, rp, fee, ppp, rpr
+  328                   
+  329 00000 000000      wr,	0
+  330 00001 260015      	dap wre
+  331                   wr1,	print i wre
+      00002 210015
+      00003 663077
+      00004 730003
+      00005 663077
+      00006 730003
+
+       harmony compiler  phase 1  : 5/21/63                               Page 7
+
+
+      00007 663077
+      00010 730003
+  332 00011 440015      	idx wre
+  333 00012 520000      	sas wr
+  334 00013 600002      	jmp wr1
+  335 00014 610015      wrx,	jmp i wre
+  336 00015 000000      wre,	0
+  337                   
+  338 00016 000000      rpr,	0
+  339 00017 720030      	rrb
+  340 00020 720001      	rpa-i
+  341 00021 260022      	dap .+1
+  342 00022 600000      	jmp
+  343                   
+  344 00023 000000      rp,	0
+  345 00024 260056      	dap rtx
+  346 00025 720033      rt2,	cks
+  347 00026 662001      	ril 1s
+  348 00027 652000      	spi i
+  349 00030 600025      	jmp rt2
+  350 00031 720030      	rrb
+  351 00032 720001      	rpa-i
+  352 00033 323336      	dio t1
+  353 00034 673177      	rcr 7s
+  354 00035 640200      	spa
+  355 00036 600025      	jmp rt2
+  356 00037 701000      	law 1000
+  357 00040 403336      	add t1
+  358 00041 260043      	dap .+2
+  359 00042 702525      	law 2525
+  360 00043 670000      	670000	/rar
+  361 00044 640400      	sma
+  362 00045 600057      	jmp rtb
+  363 00046 700077      	law 77
+  364 00047 023336      	and t1
+  365 00050 503342      	sad (77
+  366 00051 760200      	cla
+  367 00052 503343      	sad (36
+  368 00053 760200      	cla
+  369 00054 503344      	sad (13
+  370 00055 600025      	jmp rt2
+  371 00056 600000      rtx,	jmp
+  372 00057 203336      rtb,	lac t1
+  373 00060 640100      	sza
+  374 00061 760400      	hlt
+  375 00062 600025      	jmp rt2
+  376                   
+  377 00063 000000      fee,	0
+  378 00064 260075      	dap fex
+  379 00065 764000      	cli
+  380 00066 762200      	lat
+  381 00067 023345      	and (700
+  382 00070 503345      	sad (700
+  383 00071 600075      	jmp fex
+  384 00072 730005      	ppa
+  385 00073 460063      	isp fee
+  386 00074 600072      	jmp .-2
+
+       harmony compiler  phase 1  : 5/21/63                               Page 8
+
+
+  387 00075 600000      fex,	jmp
+  388                   
+  389 00076 000000      ppp,	0
+  390 00077 260112      	dap pup
+  391 00100 220076      	lio ppp
+  392 00101 762200      	lat
+  393 00102 023345      	and (700
+  394 00103 503345      	sad (700
+  395 00104 600112      	jmp pup
+  396 00105 730006      	ppb
+  397 00106 662077      	ril 6s
+  398 00107 730006      	ppb
+  399 00110 662077      	ril 6s
+  400 00111 730006      	ppb
+  401 00112 600000      pup,	jmp
+  402                   
+  403                   
+  404                   /ap, cr, sbc, snl, rfcw, rrc, rch, er, er1, red, blk, eh
+  405                   
+  406                   u,	halt
+      00113 760400
+  407                   ap,	zero lmb
+      00114 343267
+  408                   	call rpr
+      00115 170016
+  409                   	sett bc, -1
+IC illegal blank        	     ^
+      00116 203346
+      00117 243232
+  410                   	store nl
+      00120 243255
+  411                   	sett mjp, -2
+IC illegal blank        	     ^
+      00121 203347
+      00122 243332
+  412                   
+  413                   pf,	sett ft, fb
+IC illegal blank        	     ^
+      00123 203350
+      00124 243320
+  414                   
+  415                   pg,	call rp		/read title
+      00125 170023
+  416                   
+  417                   	store chr
+      00126 243235
+  418                   	load ft
+      00127 203320
+  419                   	putback f, chr
+      00130 403351
+      00131 260133
+      00132 203235
+      00133 240000
+  420                   	testnl chr, (21, pg1
+      00134 203235
+      00135 523352
+      00136 600146
+
+       harmony compiler  phase 1  : 5/21/63                               Page 9
+
+
+  421                   
+  422                   xp,	sett pfu, pfr
+IC illegal blank        	     ^
+      00137 203353
+      00140 243306
+  423                   	sett emp, fb
+IC illegal blank        	     ^
+      00141 203350
+      00142 243334
+  424                   	sett tc, -1
+IC illegal blank        	     ^
+      00143 203346
+      00144 243234
+  425                   	goto erf
+      00145 600470
+  426                   
+  427                   pg1,	step1 ft
+      00146 443320
+  428                   	trnl (fl, pg
+      00147 523354
+      00150 600125
+  429                   hap,	goto rrz
+      00151 600641
+  430                   
+  431                   pfr,	zero 1u
+      00152 343264
+  432                   	zero 3u
+      00153 343265
+  433                   	sett irl, -1
+IC illegal blank        	     ^
+      00154 203346
+      00155 243311
+  434                   	zero tll
+      00156 343305
+  435                   	zero ft
+      00157 343320
+  436                   	sett fi, 1
+IC illegal blank        	     ^
+      00160 203355
+      00161 243317
+  437                   	store sid
+      00162 243276
+  438                   	zero rob
+      00163 343302
+  439                   	zero gi
+      00164 343303
+  440                   	zero gis
+      00165 343304
+  441                   	zero ao
+      00166 343231
+  442                   	zero tc
+      00167 343234
+  443                   	zero mm
+      00170 343262
+  444                   	zero ss
+      00171 343237
+  445                   	sett rb, 1
+
+       harmony compiler  phase 1  : 5/21/63                              Page 10
+
+
+IC illegal blank        	     ^
+      00172 203355
+      00173 243335
+  446                   	store tbc
+      00174 243233
+  447                   	sett tim, -1
+IC illegal blank        	     ^
+      00175 203346
+      00176 243227
+  448                   	sett st, 26
+IC illegal blank        	     ^
+      00177 203356
+      00200 243242
+  449                   	goto pum	/copies nt to kt to mt, goes to s1
+      00201 602675
+  450                   
+  451                   
+  452                   cr,	answer crx
+      00202 000000
+      00203 260207
+      00204 200202
+  453                   	type (77
+      00205 223342
+      00206 730003
+  454                   crx,	exit cr
+      00207 600000
+  455                   
+  456                   sbc,	answer sbx
+      00210 000000
+      00211 260223
+      00212 200210
+  457                   	step1 tbc
+      00213 443233
+  458                   	step1 bc
+      00214 443232
+  459                   	addi nl
+      00215 403255
+  460                   	tgrec all, s3x
+      00216 423357
+      00217 640500
+      00220 600633
+  461                   	load bc
+      00221 203232
+  462                   	complement
+      00222 761000
+  463                   sbx,	exit sbc
+      00223 600000
+  464                   
+  465                   
+  466                   snl,	answer swx
+      00224 000000
+      00225 260235
+      00226 200224
+  467                   	step1 nl
+      00227 443255
+  468                   	addi bc
+      00230 403232
+
+       harmony compiler  phase 1  : 5/21/63                              Page 11
+
+
+  469                   	tgrec all, s3x
+      00231 423357
+      00232 640500
+      00233 600633
+  470                   	load nl
+      00234 203255
+  471                   swx,	exit snl
+      00235 600000
+  472                   
+  473                   rcw,	answer rwx
+      00236 000000
+      00237 260242
+      00240 200236
+  474                   	load fi
+      00241 203317
+  475                   rwx,	exit rcw
+      00242 600000
+  476                   
+  477                   rrc,	answer rrx
+      00243 000000
+      00244 260251
+      00245 200243
+  478                   	move fl2, fi
+      00246 203324
+      00247 243317
+  479                   	store fl1
+      00250 243323
+  480                   rrx,	exit rrc
+      00251 600000
+  481                   
+  482                   
+  483                   rch,	answer rcx
+      00252 000000
+      00253 260426
+      00254 200252
+  484                   	load ft
+      00255 203320
+  485                   	tgrel fi, rcf
+      00256 423317
+      00257 640400
+      00260 600405
+  486                   	sett mbh, fb
+IC illegal blank        	     ^
+      00261 203350
+      00262 243266
+  487                   	store fi
+      00263 243317
+  488                   	store ft
+      00264 243320
+  489                   	store fl1
+      00265 243323
+  490                   	store fl2
+      00266 243324
+  491                   	sett bgs, 1
+IC illegal blank        	     ^
+      00267 203355
+      00270 243316
+
+       harmony compiler  phase 1  : 5/21/63                              Page 12
+
+
+  492                   
+  493                   rcy,	call rp		/read body
+      00271 170023
+  494                   
+  495                   	store ch
+      00272 243322
+  496                   	trnl (74, rcc
+      00273 523360
+      00274 600301
+  497                   
+  498                   rcu,	call rp		/read comment
+      00275 170023
+  499                   
+  500                   	trnl (72, rcu
+      00276 523361
+      00277 600275
+  501                   	goto rcy
+      00300 600271
+  502                   
+  503                   rcc,	load ch
+      00301 203322
+  504                   	trze rc1
+      00302 650100
+      00303 600310
+  505                   	trel (21, rc1
+      00304 503352
+      00305 600310
+  506                   	clear
+      00306 760200
+  507                   	goto rc2
+      00307 600311
+  508                   rc1,	load (1
+      00310 203355
+  509                   rc2,	store pp
+      00311 243321
+  510                   	load ft
+      00312 203320
+  511                   	putback f, ch
+      00313 403351
+      00314 260316
+      00315 203322
+      00316 240000
+  512                   	step1 ft
+      00317 443320
+  513                   	tlesc fw, rcs
+      00320 423362
+      00321 640200
+      00322 600333
+  514                   	load ft
+      00323 203320
+  515                   	tlesc fl, rce
+      00324 423354
+      00325 640200
+      00326 600330
+  516                   	goto rrz
+      00327 600641
+  517                   rce,	load ch
+
+       harmony compiler  phase 1  : 5/21/63                              Page 13
+
+
+      00330 203322
+  518                   	trel (21, rfc
+      00331 503352
+      00332 600402
+  519                   rcs,	load bgs
+      00333 203316
+  520                   	diswith ch, rdt
+IC illegal blank        	     ^
+      00334 403363
+      00335 260337
+      00336 203322
+      00337 610000
+  521                   
+  522 00340 000345      rdt,	rd0	rd1	rd2	rd3	rd4
+      00341 000354
+      00342 000361
+      00343 000366
+      00344 000373
+  523                   
+  524                   rd0,	trze rda
+      00345 650100
+      00346 600351
+  525                   	trnl (21, rdp
+      00347 523352
+      00350 600377
+  526                   rda,	sett bgs, 1
+IC illegal blank        	     ^
+      00351 203355
+      00352 243316
+  527                   	goto rcy
+      00353 600271
+  528                   rd1,	trnl (65, rdp
+      00354 523364
+      00355 600377
+  529                   	sett bgs, 2
+IC illegal blank        	     ^
+      00356 203365
+      00357 243316
+  530                   	goto rcy
+      00360 600271
+  531                   rd2,	trnl (45, rdp
+      00361 523366
+      00362 600377
+  532                   	sett bgs, 3
+IC illegal blank        	     ^
+      00363 203367
+      00364 243316
+  533                   	goto rcy
+      00365 600271
+  534                   rd3,	trnl (64, rdp
+      00366 523370
+      00367 600377
+  535                   	sett bgs, 4
+IC illegal blank        	     ^
+      00370 203371
+      00371 243316
+  536                   	goto rcy
+
+       harmony compiler  phase 1  : 5/21/63                              Page 14
+
+
+      00372 600271
+  537                   rd4,	trze rfc
+      00373 650100
+      00374 600402
+  538                   	trel (1, rfc
+      00375 503355
+      00376 600402
+  539                   rdp,	move pp, bgs
+      00377 203321
+      00400 243316
+  540                   	goto rcy
+      00401 600271
+  541                   
+  542                   rfc,	istepa ft, 1
+      00402 700002
+      00403 403320
+      00404 243320
+  543                   rcf,	load fi
+      00405 203317
+  544                   	lookup f
+      00406 403351
+      00407 260410
+      00410 200000
+  545                   	store ch
+      00411 243322
+  546                   	step1 fi
+      00412 443317
+  547                   	load ch
+      00413 203322
+  548                   	trze rf1
+      00414 650100
+      00415 600423
+  549                   	trel (21, rf1
+      00416 503352
+      00417 600423
+  550                   	move fl1, fl2
+      00420 203323
+      00421 243324
+  551                   	goto rff
+      00422 600425
+  552                   rf1,	move fi, fl1
+      00423 203317
+      00424 243323
+  553                   
+  554                   rff,	load ch
+      00425 203322
+  555                   rcx,	exit rch
+      00426 600000
+  556                   
+  557                   
+  558                   /error
+  559                   
+  560                   er,	answer erx
+      00427 000000
+      00430 260570
+      00431 200427
+  561                   	store arg
+
+       harmony compiler  phase 1  : 5/21/63                              Page 15
+
+
+      00432 243326
+  562                   	sett uin, 1
+IC illegal blank        	     ^
+      00433 203355
+      00434 243327
+  563                   	goto erc
+      00435 600444
+  564                   er1,	answer ery
+      00436 000000
+      00437 260567
+      00440 200436
+  565                   	store arg
+      00441 243326
+  566                   	sett uin, -1
+IC illegal blank        	     ^
+      00442 203346
+      00443 243327
+  567                   
+  568                   erc,	sett pfu, ec3
+IC illegal blank        	     ^
+      00444 203372
+      00445 243306
+  569                   ert,	load mjp
+      00446 203332
+  570                   	tgrec -2, erq
+      00447 423347
+      00450 640500
+      00451 600457
+  571                   	call red
+      00452 170571
+  572                   	write erq
+      00453 700457
+      00454 170000
+  573 00455 000000      	text /
+UD undefined            	^
+  574 00456 000474      To err is human---to forgive, divine.
+UD undefined            ^
+UD undefined                   ^
+UD undefined                      ^
+IC illegal char                         ^
+UD undefined                              ^
+UD undefined                                 ^
+IC illegal char                                     ^
+IC illegal blank                                     ^
+IC in expression                                      ^
+  575                   
+  576                   /
+  577                   erq,	call blk
+      00457 170604
+  578                   	testnl mjp, bc, erk
+      00460 203332
+      00461 523232
+      00462 600466
+  579                   	testel tjp, tc, ec
+      00463 203333
+      00464 503234
+      00465 600540
+
+       harmony compiler  phase 1  : 5/21/63                              Page 16
+
+
+  580                   erk,	move mbh, emp
+      00466 203266
+      00467 243334
+  581                   
+  582                   erf,	zero blc
+      00470 343331
+  583                   	sett etc, 1
+IC illegal blank        	     ^
+      00471 203355
+      00472 243330
+  584                   	load emp
+      00473 203334
+  585                   
+  586                   err,	lookup f
+      00474 403351
+      00475 260476
+      00476 200000
+  587                   	store chy
+      00477 243325
+  588                   	trze et1
+      00500 650100
+      00501 600507
+  589                   	trel (21, ec0
+      00502 503352
+      00503 600534
+  590                   	type chy
+      00504 223325
+      00505 730003
+  591                   	goto etr
+      00506 600531
+  592                   
+  593 00507 003330      et1,	setp1 etc
+UD undefined                	^
+  594                   	subt tc
+      00510 423234
+  595                   	trze et2
+      00511 650100
+      00512 600517
+  596                   	trnl (1, et4
+      00513 523355
+      00514 600520
+  597                   	call blk
+      00515 170604
+  598                   	goto et4
+      00516 600520
+  599                   et2,	call red
+      00517 170571
+  600                   et4,	load blc
+      00520 203331
+  601                   	tlesc 100, ets
+      00521 423373
+      00522 640200
+      00523 600527
+  602                   	call cr
+      00524 170202
+  603                   	zero blc
+      00525 343331
+
+       harmony compiler  phase 1  : 5/21/63                              Page 17
+
+
+  604                   	goto eti
+      00526 600532
+  605                   ets,	type (0
+      00527 223351
+      00530 730003
+  606                   etr,	step1 blc
+      00531 443331
+  607                   eti,	step1 emp
+      00532 443334
+  608                   	goto err
+      00533 600474
+  609                   
+  610                   ec0,	call blk
+      00534 170604
+  611                   	type (21
+      00535 223352
+      00536 730003
+  612                   	call cr
+      00537 170202
+  613                   
+  614                   ec,	govia pfu
+      00540 613306
+  615                   ec3,	type (36
+      00541 223343
+      00542 730003
+  616                   	testp uin, ec1
+      00543 203327
+      00544 640400
+      00545 600547
+  617                   	call red
+      00546 170571
+  618                   ec1,	print arg
+      00547 203326
+      00550 663077
+      00551 730003
+      00552 663077
+      00553 730003
+      00554 663077
+      00555 730003
+  619                   	call blk
+      00556 170604
+  620                   ec2,	call cr
+      00557 170202
+  621                   	move bc, mjp
+      00560 203232
+      00561 243332
+  622                   	move tc, tjp
+      00562 203234
+      00563 243333
+  623                   	testp uin, erx
+      00564 203327
+      00565 640400
+      00566 600570
+  624                   ery,	exit er1
+      00567 600000
+  625                   erx,	exit er
+      00570 600000
+
+       harmony compiler  phase 1  : 5/21/63                              Page 18
+
+
+  626                   
+  627                   
+  628                   /red, black, eh
+  629                   
+  630                   red,	answer rex
+      00571 000000
+      00572 260603
+      00573 200571
+  631                   	testm rb, rex
+      00574 203335
+      00575 640200
+      00576 600603
+  632                   	type (35
+      00577 223374
+      00600 730003
+  633                   	sett rb, -1
+IC illegal blank        	     ^
+      00601 203346
+      00602 243335
+  634                   rex,	exit red
+      00603 600000
+  635                   
+  636                   
+  637                   blk,	answer blx
+      00604 000000
+      00605 260616
+      00606 200604
+  638                   	testp rb, blx
+      00607 203335
+      00610 640400
+      00611 600616
+  639                   	type (34
+      00612 223375
+      00613 730003
+  640                   	sett rb, +1
+IC illegal blank        	     ^
+IC illegal char         	      ^
+IC in expression        	       ^
+      00614 203351
+      00615 243335
+  641                   blx,	exit blk
+      00616 600000
+  642                   
+  643                   
+  644                   s1y,
+  645                   s1z,	error flexo tmf
+UD undefined            	     ^
+UD undefined            	           ^
+      00617 203351
+      00620 170436
+  646                   	goto te
+      00621 602223
+  647                   s1x,	error flexo tff
+UD undefined            	     ^
+UD undefined            	           ^
+      00622 203351
+      00623 170436
+
+       harmony compiler  phase 1  : 5/21/63                              Page 19
+
+
+  648                   	goto te
+      00624 602223
+  649                   s1w,	error flexo unc
+UD undefined            	     ^
+UD undefined            	           ^
+      00625 203351
+      00626 170436
+  650                   	goto te
+      00627 602223
+  651                   s1v,	error flexo ert
+UD undefined            	     ^
+      00630 203376
+      00631 170436
+  652                   	goto te
+      00632 602223
+  653                   
+  654                   s3x,	call cr
+      00633 170202
+  655                   	write eha
+      00634 700637
+      00635 170000
+  656 00636 000000      	text /Table overflow.  Subdivide source program./
+UD undefined            	^
+  657                   eha,	call cr
+      00637 170202
+  658                   	goto u
+      00640 600113
+  659                   
+  660                   rrz,	call cr
+      00641 170202
+  661                   	write rry
+      00642 700645
+      00643 170000
+  662 00644 000000      	text /Measure has too many characters.  Rearrange tape./
+UD undefined            	^
+  663                   rry,	goto eha
+      00645 600637
+  664                   
+  665                   pcz,	error flexo nps
+UD undefined            	     ^
+UD undefined            	           ^
+      00646 203351
+      00647 170436
+  666                   	test0 chr, te
+      00650 203235
+      00651 650100
+      00652 602223
+  667                   pz2,	call rch
+      00653 170252
+  668                   	store chr
+      00654 243235
+  669                   	trze pz3
+      00655 650100
+      00656 600661
+  670                   	trnl (21, pz2
+      00657 523352
+      00660 600653
+
+       harmony compiler  phase 1  : 5/21/63                              Page 20
+
+
+  671                   pz3,	move chr, trm
+      00661 203235
+      00662 243230
+  672                   	goto te
+      00663 602223
+  673                   
+  674                   
+  675                   /scan 1, cn, scan 2
+  676                   
+  677                   s1,	zero ldl
+      00664 343211
+  678                   	zero ucd
+      00665 343212
+  679                   	zero num
+      00666 343213
+  680                   	zero psi
+      00667 343216
+  681                   	zero chi
+      00670 343217
+  682                   	zero g
+      00671 343222
+  683                   	zero r
+      00672 343223
+  684                   	zero cm
+      00673 343224
+  685                   	sett fc, 40
+IC illegal blank        	     ^
+      00674 203377
+      00675 243220
+  686                   	sett fu, 100
+IC illegal blank        	     ^
+      00676 203373
+      00677 243221
+  687                   
+  688                   s10,	call rch
+      00700 170252
+  689                   	store chr
+      00701 243235
+  690                   	trze s11
+      00702 650100
+      00703 600732
+  691                   	tgrec 20, s11
+      00704 423400
+      00705 640500
+      00706 600732
+  692                   s12,	step1 psi
+      00707 443216
+  693                   	test1 ldl, s13
+      00710 203211
+      00711 640100
+      00712 600715
+  694                   	sett ldl, 1
+IC illegal blank        	     ^
+      00713 203355
+      00714 243211
+  695                   s13,	testnl chr, (20, s14
+      00715 203235
+
+       harmony compiler  phase 1  : 5/21/63                              Page 21
+
+
+      00716 523400
+      00717 600721
+  696                   	clear
+      00720 760200
+  697                   s14,	store dig
+      00721 243236
+  698                   	load num
+      00722 203213
+  699                   	x10dec
+      00723 661001
+      00724 243336
+      00725 661003
+      00726 403336
+  700                   	addi dig
+      00727 403236
+  701                   	store num
+      00730 243213
+  702                   	goto s10
+      00731 600700
+  703                   
+  704                   s11,	test0 ldl, s15
+      00732 203211
+      00733 650100
+      00734 600754
+  705                   	zero ldl
+      00735 343211
+  706                   	test0 ucd, s17
+      00736 203212
+      00737 650100
+      00740 600747
+  707                   	tgrec 1, s16
+      00741 423355
+      00742 640500
+      00743 600753
+  708                   	move num, n2
+      00744 203213
+      00745 243215
+  709                   	goto s16
+      00746 600753
+  710                   s17,	move num, n1
+      00747 203213
+      00750 243214
+  711                   	store n2
+      00751 243215
+  712                   	zero num
+      00752 343213
+  713                   s16,	step1 ucd
+      00753 443212
+  714                   
+  715                   s15,	test0 chr, s18
+      00754 203235
+      00755 650100
+      00756 601013
+  716                   	trel (21, s18
+      00757 503352
+      00760 601013
+  717                   	step1 chi
+
+       harmony compiler  phase 1  : 5/21/63                              Page 22
+
+
+      00761 443217
+  718                   	step1 psi
+      00762 443216
+  719                   	load chr
+      00763 203235
+  720                   	ftrel (73, s19
+      00764 503401
+      00765 600777
+  721                   	ftrel (27, s1a
+      00766 503402
+      00767 601001
+  722                   	ftrel (51, s1b
+      00770 503403
+      00771 601005
+  723                   	ftrel (67, s1c
+      00772 503404
+      00773 601007
+  724                   	trel (33, s1d
+      00774 503405
+      00775 601011
+  725                   	goto s10
+      00776 600700
+  726                   
+  727                   s19,	move fc, fu
+      00777 203220
+      01000 243221
+  728                   s1a,	halfof fc
+      01001 203220
+      01002 675001
+      01003 243220
+  729                   	goto s10
+      01004 600700
+  730                   
+  731                   s1b,	step1 r
+      01005 443223
+  732                   	goto s10
+      01006 600700
+  733                   s1c,	step1 g
+      01007 443222
+  734                   	goto s10
+      01010 600700
+  735                   s1d,	step1 cm
+      01011 443224
+  736                   	goto s10
+      01012 600700
+  737                   
+  738                   s18,	step1 tc
+      01013 443234
+  739                   	move chr, trm
+      01014 203235
+      01015 243230
+  740                   	test0 psi, te
+      01016 203216
+      01017 650100
+      01020 602223
+  741                   	load ucd
+      01021 203212
+
+       harmony compiler  phase 1  : 5/21/63                              Page 23
+
+
+  742                   	addi cm
+      01022 403224
+  743                   	trze pc
+      01023 650100
+      01024 602301
+  744                   	test1 chi, s1e
+      01025 203217
+      01026 640100
+      01027 601041
+  745                   	test1 ao, ps
+      01030 203231
+      01031 640100
+      01032 602516
+  746                   	testel n1, tbc, te
+      01033 203214
+      01034 503233
+      01035 602223
+  747                   	complaint flexo bbl
+UD undefined            	     ^
+UD undefined            	           ^
+      01036 203351
+      01037 170427
+  748                   	goto te
+      01040 602223
+  749                   
+  750                   s1e,	zero ao
+      01041 343231
+  751                   	load r
+      01042 203223
+  752                   	tlesc 2, s1f
+      01043 423365
+      01044 640200
+      01045 601052
+  753                   	complaint flexo tmr
+UD undefined            	     ^
+UD undefined            	           ^
+      01046 203351
+      01047 170427
+  754                   	sett r, 1
+IC illegal blank        	     ^
+      01050 203355
+      01051 243223
+  755                   s1f,	load g
+      01052 203222
+  756                   	tlesc 2, s1g
+      01053 423365
+      01054 640200
+      01055 601062
+  757                   	complaint flexo tmg
+UD undefined            	     ^
+UD undefined            	           ^
+      01056 203351
+      01057 170427
+  758                   	sett g, 1
+IC illegal blank        	     ^
+      01060 203355
+      01061 243222
+
+       harmony compiler  phase 1  : 5/21/63                              Page 24
+
+
+  759                   s1g,	load cm
+      01062 203224
+  760                   	tlesc 2, s1h
+      01063 423365
+      01064 640200
+      01065 601072
+  761                   	complaint flexo tmc
+UD undefined            	     ^
+UD undefined            	           ^
+      01066 203351
+      01067 170427
+  762                   	sett cm, 1
+IC illegal blank        	     ^
+      01070 203355
+      01071 243224
+  763                   
+  764                   s1h,	load cm
+      01072 203224
+  765                   	addi r
+      01073 403223
+  766                   	addi ucd
+      01074 403212
+  767                   	tgrec 2, s1y
+      01075 423365
+      01076 640500
+      01077 600617
+  768                   	test1 cm,s1s
+      01100 203224
+      01101 640100
+      01102 601121
+  769                   	load r
+      01103 203223
+  770                   	addi g
+      01104 403222
+  771                   	addi ucd
+      01105 403212
+  772                   	subt (2
+      01106 423365
+  773                   	trmi s1x
+      01107 640200
+      01110 600622
+  774                   	trnz s1t
+      01111 640100
+      01112 601124
+  775                   	test0 g, s1t
+      01113 203222
+      01114 650100
+      01115 601124
+  776                   	sett rt, 1
+IC illegal blank        	     ^
+      01116 203355
+      01117 243225
+  777                   	goto sli
+      01120 601125
+  778                   
+  779                   s1s,	sett rt, 2
+IC illegal blank        	     ^
+
+       harmony compiler  phase 1  : 5/21/63                              Page 25
+
+
+      01121 203365
+      01122 243225
+  780                   	goto sli
+      01123 601125
+  781                   
+  782                   s1t,	zero rt
+      01124 343225
+  783                   sli,	test1 r, s1k
+      01125 203223
+      01126 640100
+      01127 601137
+  784                   	test1 ucd, s1j
+      01130 203212
+      01131 640100
+      01132 601135
+  785                   	load (2
+      01133 203365
+  786                   	goto s1l
+      01134 601157
+  787                   s1j,	clear
+      01135 760200
+  788                   	goto s1l
+      01136 601157
+  789                   s1k,	test1 sid, sk1
+      01137 203276
+      01140 640100
+      01141 601156
+  790                   	load nld	/from nl, 2006/02/26  --prs.
+      01142 203277
+  791                   	lookup not
+      01143 403406
+      01144 261145
+      01145 200000
+  792                   	band (117777
+      01146 023407
+  793                   	addi (400000
+      01147 403410
+  794                   	store t1
+      01150 243336
+  795                   	load nld	/from nl, 2006/02/26  --prs.
+      01151 203277
+  796                   	putback not, t1
+      01152 403406
+      01153 261155
+      01154 203336
+      01155 240000
+  797                   sk1,	load (1
+      01156 203355
+  798                   s1l,	store lt
+      01157 243226
+  799                   	test0 rt, s1n
+      01160 203225
+      01161 650100
+      01162 601175
+  800                   	tgrec 1, s1m
+      01163 423355
+      01164 640500
+
+       harmony compiler  phase 1  : 5/21/63                              Page 26
+
+
+      01165 601171
+  801                   	sett tim, 2
+IC illegal blank        	     ^
+      01166 203365
+      01167 243227
+  802                   	goto s1o
+      01170 601237
+  803                   
+  804                   s1m,	testm tim, s1w
+      01171 203227
+      01172 640200
+      01173 600625
+  805                   	goto s1o
+      01174 601237
+  806                   
+  807                   s1n,	sett tim, 100
+IC illegal blank        	     ^
+      01175 203373
+      01176 243227
+  808                   	sett t2, 1
+IC illegal blank        	     ^
+      01177 203355
+      01200 243337
+  809                   	move n2, t1
+      01201 203215
+      01202 243336
+  810                   	trze s1v
+      01203 650100
+      01204 600630
+  811                   	tgrec 100, s1v
+      01205 423373
+      01206 640500
+      01207 600630
+  812                   
+  813                   s1q,	halfof t1
+      01210 203336
+      01211 675001
+      01212 243336
+  814                   	trze s1p
+      01213 650100
+      01214 601227
+  815                   	halfof tim
+      01215 203227
+      01216 675001
+      01217 243227
+  816                   	halfof fu
+      01220 203221
+      01221 675001
+      01222 243221
+  817                   	double t2
+      01223 203337
+      01224 661001
+      01225 243337
+  818                   	goto s1q
+      01226 601210
+  819                   
+  820                   s1p,	testnl n2, t2, s1v
+
+       harmony compiler  phase 1  : 5/21/63                              Page 27
+
+
+      01227 203215
+      01230 523337
+      01231 600630
+  821                   	test1 fu, s1o
+      01232 203221
+      01233 640100
+      01234 601237
+  822                   	complaint flexo dtu
+UD undefined            	     ^
+UD undefined            	           ^
+      01235 203351
+      01236 170427
+  823                   
+  824                   s1o,	load tim
+      01237 203227
+  825                   	halve
+      01240 675001
+  826                   	store fc
+      01241 243220
+  827                   	goto s2
+      01242 601243
+  828                   
+  829                   
+  830                   /scan 2
+  831                   
+  832                   s2,	zero fu
+      01243 343221
+  833                   	zero sr
+      01244 343241
+  834                   	zero 3i
+      01245 343243
+  835                   	zero si
+      01246 343307
+  836                   	zero aci
+      01247 343244
+  837                   	zero acc
+      01250 343245
+  838                   	zero et
+      01251 343246
+  839                   	zero ete
+      01252 343247
+  840                   	call rrc
+      01253 170243
+  841                   
+  842                   s20,	call rch
+      01254 170252
+  843                   	store chr
+      01255 243235
+  844                   	trze s21
+      01256 650100
+      01257 601264
+  845                   	tgrec 20, s21
+      01260 423400
+      01261 640500
+      01262 601264
+  846                   	goto s20
+      01263 601254
+
+       harmony compiler  phase 1  : 5/21/63                              Page 28
+
+
+  847                   s21,	load chr
+      01264 203235
+  848                   	search s2z, 25, s20
+      01265 243336
+      01266 702122
+      01267 261271
+      01270 203336
+      01271 500000
+      01272 601277
+      01273 441271
+      01274 523411
+      01275 601270
+      01276 601254
+      01277 201271
+      01300 403412
+  849                   	dispatch s2y
+      01301 403413
+      01302 261303
+      01303 610000
+  850                   
+  851                   s2b,	sett sv, 200000
+IC illegal blank        	     ^
+      01304 203414
+      01305 243240
+  852                   	goto s2a
+      01306 601321
+  853                   s2c,	sett sv, 400000
+IC illegal blank        	     ^
+      01307 203410
+      01310 243240
+  854                   	goto s2a
+      01311 601321
+  855                   2sr,	sett sv, 20000
+IC illegal blank        	     ^
+      01312 203415
+      01313 243240
+  856                   	goto s2a
+      01314 601321
+  857                   2ss,	sett sv, 40000
+IC illegal blank        	     ^
+      01315 203416
+      01316 243240
+  858                   	goto s2a
+      01317 601321
+  859                   s2d,	zero sv
+      01320 343240
+  860 01321 003307      s2a,	setpa si, 1
+UD undefined                	^
+IC illegal char             	        ^
+IC illegal blank            	         ^
+IC in expression            	          ^
+  861                   	goto s20
+      01322 601254
+  862                   s2e,	stepa sr, 14
+      01323 700014
+      01324 403241
+      01325 243241
+
+       harmony compiler  phase 1  : 5/21/63                              Page 29
+
+
+  863                   	goto s20
+      01326 601254
+  864                   s2f,	istepa sr, 14
+      01327 700030
+      01330 403241
+      01331 243241
+  865                   	goto s20
+      01332 601254
+  866                   s2g,	sett 3i, 100000
+IC illegal blank        	     ^
+      01333 203417
+      01334 243243
+  867                   	goto s20
+      01335 601254
+  868                   s2h,	testm aci, s24
+      01336 203244
+      01337 640200
+      01340 601354
+  869                   	step1 acc
+      01341 443245
+  870                   	goto s25
+      01342 601351
+  871                   s2i,	testm aci, s24
+      01343 203244
+      01344 640200
+      01345 601354
+  872                   	istepa acc, 1
+      01346 700002
+      01347 403245
+      01350 243245
+  873                   s25,	sett aci, 1
+IC illegal blank        	     ^
+      01351 203355
+      01352 243244
+  874                   	goto s20
+      01353 601254
+  875                   s24,	complaint flexo nor
+UD undefined            	     ^
+UD undefined            	           ^
+      01354 203351
+      01355 170427
+  876                   	goto s20
+      01356 601254
+  877                   s2j,	testel aci, (1, s26
+      01357 203244
+      01360 503355
+      01361 601365
+  878                   
+  879                   s27,	sett aci, -1
+IC illegal blank        	     ^
+      01362 203346
+      01363 243244
+  880                   	goto s20
+      01364 601254
+  881                   s26,	complaint flexo nor
+UD undefined            	     ^
+UD undefined            	           ^
+
+       harmony compiler  phase 1  : 5/21/63                              Page 30
+
+
+      01365 203351
+      01366 170427
+  882                   	zero acc
+      01367 343245
+  883                   	goto s27
+      01370 601362
+  884                   
+  885                   s2k,	load (1
+      01371 203355
+  886                   	goto s28
+      01372 601404
+  887                   s2l,	load (2
+      01373 203365
+  888                   	goto s28
+      01374 601404
+  889                   s2m,	load (3
+      01375 203367
+  890                   	goto s28
+      01376 601404
+  891                   s2n,	load (4
+      01377 203371
+  892                   	goto s28
+      01400 601404
+  893                   s2o,	load (5
+      01401 203420
+  894                   	goto s28
+      01402 601404
+  895                   s38,	load (6
+      01403 203421
+  896                   s28,	store et
+      01404 243246
+  897                   	test0 ete, s29
+      01405 203247
+      01406 650100
+      01407 601412
+  898                   	complaint flexo tme
+UD undefined            	     ^
+UD undefined            	           ^
+      01410 203351
+      01411 170427
+  899                   s29,	move et, ete
+      01412 203246
+      01413 243247
+  900                   	goto s20
+      01414 601254
+  901                   
+  902                   s2p,	step fu, fc
+      01415 203221
+      01416 403220
+      01417 243221
+  903                   s2q,	halfof fc
+      01420 203220
+      01421 675001
+      01422 243220
+  904                   	goto s20
+      01423 601254
+  905                   
+
+       harmony compiler  phase 1  : 5/21/63                              Page 31
+
+
+  906                   s2r,	test0 si, s51
+      01424 203307
+      01425 650100
+      01426 601433
+  907                   	trel (1, s52
+      01427 503355
+      01430 601435
+  908                   	complaint flexo tms
+UD undefined            	     ^
+UD undefined            	           ^
+      01431 203351
+      01432 170427
+  909                   
+  910                   s51,	move ss, sv
+      01433 203237
+      01434 243240
+  911                   s52,	test1 cm, s69
+      01435 203224
+      01436 640100
+      01437 601505
+  912                   	move 3i, ccc
+      01440 203243
+      01441 243300
+  913                   
+  914                   2s3,	load tim
+      01442 203227
+  915                   	addi fu
+      01443 403221
+  916                   	store nft
+      01444 243256
+  917                   	store nfp
+      01445 243257
+  918                   	test1 g, 2s1
+      01446 203222
+      01447 640100
+      01450 601477
+  919                   	zero gi
+      01451 343303
+  920                   	test0 rob, s2s
+      01452 203302
+      01453 650100
+      01454 601525
+  921                   	load nft
+      01455 203256
+  922                   	subt rob
+      01456 423302
+  923                   	store nft
+      01457 243256
+  924                   	tlesc 2, 2s2
+      01460 423365
+      01461 640200
+      01462 601465
+  925                   22s,	zero rob
+      01463 343302
+  926                   	goto s2s
+      01464 601525
+  927                   
+
+       harmony compiler  phase 1  : 5/21/63                              Page 32
+
+
+  928                   2s2,	load nft
+      01465 203256
+  929                   	tgrel rob, 22s
+      01466 423302
+      01467 640400
+      01470 601463
+  930                   	move nls, nl
+      01471 203301
+      01472 243255
+  931                   	zero rob
+      01473 343302
+  932                   	complaint flexo itg
+UD undefined            	     ^
+UD undefined            	           ^
+      01474 203351
+      01475 170427
+  933                   	goto 2s3
+      01476 601442
+  934                   
+  935                   2s1,	step rob, tim
+      01477 203302
+      01500 403227
+      01501 243302
+  936                   	sett gi, 1
+IC illegal blank        	     ^
+      01502 203355
+      01503 243303
+  937                   	goto s2s
+      01504 601525
+  938                   
+  939                   s69,	move nfp, nft
+      01505 203257
+      01506 243256
+  940                   	test1 3i, s2t
+      01507 203243
+      01510 640100
+      01511 601514
+  941                   	move ccc, 3i
+      01512 203300
+      01513 243243
+  942                   
+  943                   s2t,	test0 fu, 2s4
+      01514 203221
+      01515 650100
+      01516 601521
+  944                   	complaint flexo tic
+UD undefined            	     ^
+UD undefined            	           ^
+      01517 203351
+      01520 170427
+  945                   
+  946                   2s4,	test1 g, 2s1
+      01521 203222
+      01522 640100
+      01523 601477
+  947                   	zero gi
+      01524 343303
+
+       harmony compiler  phase 1  : 5/21/63                              Page 33
+
+
+  948                   
+  949                   s2s,	test0 lt, s2u
+      01525 203226
+      01526 650100
+      01527 601544
+  950                   	tgrec 1, sv2
+      01530 423355
+      01531 640500
+      01532 601560
+  951                   	load aci
+      01533 203244
+  952                   	addi ete
+      01534 403247
+  953                   	trze s2w
+      01535 650100
+      01536 601541
+  954                   	complaint flex air
+      01537 203422
+      01540 170427
+  955                   s2w,	sett tne, 200
+IC illegal blank        	     ^
+      01541 203423
+      01542 243252
+  956                   	goto s70
+      01543 602054
+  957                   
+  958                   s2u,	load n1
+      01544 203214
+  959                   	addi sr
+      01545 403241
+  960                   	addi st
+      01546 403242
+  961                   	store ton
+      01547 243251
+  962                   	trmi s40
+      01550 640200
+      01551 601555
+  963                   	tlesc 44, s2v
+      01552 423424
+      01553 640200
+      01554 601563
+  964                   s40,	complaint flexo uat
+UD undefined            	     ^
+UD undefined            	           ^
+      01555 203351
+      01556 170427
+  965                   	goto s2w
+      01557 601541
+  966                   
+  967                   sv2,	testel tne, (200, s70
+      01560 203252
+      01561 503423
+      01562 602054
+  968                   s2v,	test0 aci, s31
+      01563 203244
+      01564 650100
+      01565 601612
+
+       harmony compiler  phase 1  : 5/21/63                              Page 34
+
+
+  969                   	load ton
+      01566 203251
+  970                   	lookup nt
+      01567 403425
+      01570 261571
+      01571 200000
+  971                   	addi acc
+      01572 403245
+  972                   	store t1
+      01573 243336
+  973                   	tlesc 2, s41
+      01574 423365
+      01575 640200
+      01576 601603
+  974                   	load t1
+      01577 203336
+  975                   	tlesc 77, s42
+      01600 423342
+      01601 640200
+      01602 601605
+  976 01603 000000      s41,	compalint flexo aor
+UD undefined                	^
+UD undefined                	          ^
+UD undefined                	                ^
+  977                   	goto s2w
+      01604 601541
+  978                   s42,	load ton
+      01605 203251
+  979                   	putback mt, t1
+      01606 403426
+      01607 261611
+      01610 203336
+      01611 240000
+  980                   
+  981                   s31,	load ton
+      01612 203251
+  982                   	lookup mt
+      01613 403426
+      01614 261615
+      01615 200000
+  983                   	addi tll
+      01616 403305
+  984                   	store tne
+      01617 243252
+  985                   	tlesc 2, s40
+      01620 423365
+      01621 640200
+      01622 601555
+  986                   	load tne
+      01623 203252
+  987                   	tgrec 76, s40
+      01624 423427
+      01625 640500
+      01626 601555
+  988                   	load tne
+      01627 203252
+  989                   	x2to7
+
+       harmony compiler  phase 1  : 5/21/63                              Page 35
+
+
+      01630 661177
+  990                   	store tne
+      01631 243252
+  991                   s30,	test0 ete, s70
+      01632 203247
+      01633 650100
+      01634 602054
+  992                   	test0 3i, s71
+      01635 203243
+      01636 650100
+      01637 601643
+  993                   s72,	complaint flexo etr
+UD undefined            	     ^
+      01640 203430
+      01641 170427
+  994                   	goto s70
+      01642 602054
+  995                   
+  996                   s71,	load ete
+      01643 203247
+  997                   	lookup ebl-1
+      01644 403431
+      01645 261646
+      01646 200000
+  998                   	subt nft
+      01647 423256
+  999                   	trze s99
+      01650 650100
+      01651 601653
+ 1000                   	complement
+      01652 761000
+ 1001                   s99,	store ex
+      01653 243260
+ 1002                   	trpl s73
+      01654 640400
+      01655 601661
+ 1003                   
+ 1004                   s79,	complaint flexo eit
+UD undefined            	     ^
+UD undefined            	           ^
+      01656 203351
+      01657 170427
+ 1005                   	goto s70
+      01660 602054
+ 1006                   
+ 1007                   s73,	load ton
+      01661 203251
+ 1008                   	addi (1
+      01662 403355
+ 1009                   	lookup mt
+      01663 403426
+      01664 261665
+      01665 200000
+ 1010                   	addi tll
+      01666 403305
+ 1011                   	store tnf
+      01667 243254
+
+       harmony compiler  phase 1  : 5/21/63                              Page 36
+
+
+ 1012                   	tlesc 2, s39
+      01670 423365
+      01671 640200
+      01672 602052
+ 1013                   	load tnf
+      01673 203254
+ 1014                   	tgrec 76, s39
+      01674 423427
+      01675 640500
+      01676 602052
+ 1015                   	load tnf
+      01677 203254
+ 1016                   	x2to7
+      01700 661177
+ 1017                   	store tnf
+      01701 243254
+ 1018                   	load ton
+      01702 203251
+ 1019                   	subt (1
+      01703 423355
+ 1020                   	lookup mt
+      01704 403426
+      01705 261706
+      01706 200000
+ 1021                   	addi tll
+      01707 403305
+ 1022                   	store tnd
+      01710 243253
+ 1023                   	tlesc 2, s39
+      01711 423365
+      01712 640200
+      01713 602052
+ 1024                   	load tnd
+      01714 203253
+ 1025                   	tgrec 76, s39
+      01715 423427
+      01716 640500
+      01717 602052
+ 1026                   	load tnd
+      01720 203253
+ 1027                   	x2to7
+      01721 661177
+ 1028                   	store tnd
+      01722 243253
+ 1029                   	load ete
+      01723 203247
+ 1030                   	dispatch ebd-1
+      01724 403432
+      01725 261726
+      01726 610000
+ 1031                   
+ 1032                   s81,	load (2
+      01727 203365
+ 1033                   	addi tne
+      01730 403252
+ 1034                   	call cn
+      01731 172040
+
+       harmony compiler  phase 1  : 5/21/63                              Page 37
+
+
+ 1035                   	load (2
+      01732 203365
+ 1036                   	addi tnd
+      01733 403253
+ 1037                   	call cn
+      01734 172040
+ 1038                   	goto s75
+      01735 602013
+ 1039                   
+ 1040                   s82,	zero cut
+      01736 343261
+ 1041                   	goto s76
+      01737 601742
+ 1042                   
+ 1043                   s83,	sett cut, 4
+IC illegal blank        	     ^
+      01740 203371
+      01741 243261
+ 1044                   s76,	load nft
+      01742 203256
+ 1045                   	band (3
+      01743 023367
+ 1046                   	trnz s79
+      01744 640100
+      01745 601656
+ 1047                   s77,	load nft
+      01746 203256
+ 1048                   	subt cut
+      01747 423261
+ 1049                   	trze s78
+      01750 650100
+      01751 602021
+ 1050                   	load (2
+      01752 203365
+ 1051                   	addi tnf
+      01753 403254
+ 1052                   	call cn
+      01754 172040
+ 1053                   	load (2
+      01755 203365
+ 1054                   	addi tne
+      01756 403252
+ 1055                   	call cn
+      01757 172040
+ 1056                   	stepa cut, 4
+      01760 700004
+      01761 403261
+      01762 243261
+ 1057                   	goto s77
+      01763 601746
+ 1058                   
+ 1059                   s84,	load (400002
+      01764 203433
+ 1060                   	addi tnf
+      01765 403254
+ 1061                   	call cn
+      01766 172040
+
+       harmony compiler  phase 1  : 5/21/63                              Page 38
+
+
+ 1062                   	load (400002
+      01767 203433
+ 1063                   	addi tne
+      01770 403252
+ 1064                   	call cn
+      01771 172040
+ 1065                   
+ 1066                   	load (400002
+      01772 203433
+ 1067                   	addi tnd
+      01773 403253
+ 1068                   	call cn
+      01774 172040
+ 1069                   	goto s75
+      01775 602013
+ 1070                   
+ 1071                   s85,	load (2
+      01776 203365
+ 1072                   	addi tne
+      01777 403252
+ 1073                   	call cn
+      02000 172040
+ 1074                   	goto s83
+      02001 601740
+ 1075                   
+ 1076                   s86,	load (1
+      02002 203355
+ 1077                   	addi tnf
+      02003 403254
+ 1078                   	call cn
+      02004 172040
+ 1079                   	load (1
+      02005 203355
+ 1080                   	addi tne
+      02006 403252
+ 1081                   	call cn
+      02007 172040
+ 1082                   	load (1
+      02010 203355
+ 1083                   	addi tnf
+      02011 403254
+ 1084                   	call cn
+      02012 172040
+ 1085                   
+ 1086                   s75,	load ex
+      02013 203260
+ 1087                   	addi (2
+      02014 403365
+ 1088                   	addi tne
+      02015 403252
+ 1089                   	addi sv
+      02016 403240
+ 1090                   	call cn
+      02017 172040
+ 1091                   	goto s32
+      02020 602105
+ 1092                   
+
+       harmony compiler  phase 1  : 5/21/63                              Page 39
+
+
+ 1093                   s78,	load ete
+      02021 203247
+ 1094                   	dispatch ebe-1
+      02022 403434
+      02023 262024
+      02024 610000
+ 1095                   
+ 1096                   s93,	load (2
+      02025 203365
+ 1097                   	addi tnd
+      02026 403253
+ 1098                   	call cn
+      02027 172040
+ 1099                   	load (2
+      02030 203365
+ 1100                   	addi tne
+      02031 403252
+ 1101                   	call cn
+      02032 172040
+ 1102                   	goto s32
+      02033 602105
+ 1103                   
+ 1104                   s95,	load (2
+      02034 203365
+ 1105                   	addi tnf
+      02035 403254
+ 1106                   	call cn
+      02036 172040
+ 1107                   	goto s32
+      02037 602105
+ 1108                   
+ 1109                   cn,	answer cnx
+      02040 000000
+      02041 262051
+      02042 202040
+ 1110                   	store nf
+      02043 243250
+ 1111                   	call snl
+      02044 170224
+ 1112                   	putback not, nf
+      02045 403406
+      02046 262050
+      02047 203250
+      02050 240000
+ 1113                   cnx,	exit cn
+      02051 600000
+ 1114                   
+ 1115                   
+ 1116                   s39,	complaint flexo eor
+UD undefined            	     ^
+UD undefined            	           ^
+      02052 203351
+      02053 170427
+ 1117                   
+ 1118                   s70,	load nft
+      02054 203256
+ 1119                   	addi tne
+
+       harmony compiler  phase 1  : 5/21/63                              Page 40
+
+
+      02055 403252
+ 1120                   	addi sv
+      02056 403240
+ 1121                   	addi 3i
+      02057 403243
+ 1122                   	call cn
+      02060 172040
+ 1123                   	test0 gi, 2sa
+      02061 203303
+      02062 650100
+      02063 602075
+ 1124                   	test1 gis, 2sb
+      02064 203304
+      02065 640100
+      02066 602076
+ 1125                   	sett gis, 1
+IC illegal blank        	     ^
+      02067 203355
+      02070 243304
+ 1126                   	grow nl, -1, nls
+      02071 203255
+IC illegal blank        	     ^
+      02072 403346
+      02073 243301
+ 1127                   	goto 2sb
+      02074 602076
+ 1128                   
+ 1129                   2sa,	zero gis
+      02075 343304
+ 1130                   2sb,	test0 3i, s32
+      02076 203243
+      02077 650100
+      02100 602105
+ 1131                   	load nft
+      02101 203256
+ 1132                   	x2to1
+      02102 661001
+ 1133                   	store tu
+      02103 243263
+ 1134                   	goto s33
+      02104 602112
+ 1135                   
+ 1136                   s32,	load nft
+      02105 203256
+ 1137                   	store tu
+      02106 243263
+ 1138                   	x2to1
+      02107 661001
+ 1139                   	addi tu
+      02110 403263
+ 1140                   	store tu
+      02111 243263
+ 1141                   s33,	step mm, tu
+      02112 203262
+      02113 403263
+      02114 243262
+ 1142                   	move si, sid
+
+       harmony compiler  phase 1  : 5/21/63                              Page 41
+
+
+      02115 203307
+      02116 243276
+ 1143                   	move nl, nld	/ added 2006/02/26  --prs.
+      02117 203255
+      02120 243277
+ 1144                   	goto te
+      02121 602223
+ 1145                   
+ 1146                   
+ 1147 02122 000022      s2z,	22	/s
+ 1148 02123 000043      	43	/l
+ 1149 02124 000065      	65	/e
+ 1150 02125 000061      	61	/a
+ 1151 02126 000062      	62	/b
+ 1152 02127 000063      	63	/c
+ 1153 02130 000057      	57	/( +
+ 1154 02131 000054      	54	/-
+ 1155 02132 000055      	55	/) =
+ 1156 02133 000064      	64	/d
+ 1157 02134 000044      	44	/m
+ 1158 02135 000045      	45	/n
+ 1159 02136 000047      	47	/p
+ 1160 02137 000024      	24	/u
+ 1161 02140 000026      	26	/w
+ 1162 02141 000073      	73	/.
+ 1163 02142 000027      	27	/x
+ 1164 02143 000021      	21	// |
+ 1165 02144 000000      	00	/ space
+ 1166 02145 000050      	50	/q
+ 1167 02146 000070      	70	/h
+ 1168                   
+ 1169 02147 002147      s2z+25,
+IC illegal char               ^
+ 1170 02150 001304      s2y,	s2b	s2c	s2d	s2e	s2f	s2g
+      02151 001307
+      02152 001320
+      02153 001323
+      02154 001327
+      02155 001333
+ 1171 02156 001336      	s2h	s2i	s2j	s2k	s2l	s2m
+      02157 001343
+      02160 001357
+      02161 001371
+      02162 001373
+      02163 001375
+ 1172 02164 001403      	s38	s2n	s2o	s2p	s2q	s2r
+      02165 001377
+      02166 001401
+      02167 001415
+      02170 001420
+      02171 001424
+ 1173 02172 001424      	s2r	2sr	2ss
+      02173 001312
+      02174 001315
+ 1174                   
+ 1175 02175 002175      s2y+25,
+IC illegal char               ^
+
+       harmony compiler  phase 1  : 5/21/63                              Page 42
+
+
+ 1176 02176 000006      ebl,	6	/d
+ 1177 02177 000004      	4	/m
+ 1178 02200 000010      	10	/n
+ 1179 02201 000010      	10	/u
+ 1180 02202 000004      	4	/w
+ 1181 02203 000005      	5	/p
+ 1182 02204 002204      ebl+6,
+IC illegal char              ^
+ 1183 02205 001727      ebd,	s81	s82	s83	s84	s85	s86
+      02206 001736
+      02207 001740
+      02210 001764
+      02211 001776
+      02212 002002
+ 1184                   
+ 1185 02213 002213      ebd+6,
+IC illegal char              ^
+ 1186 02214 002105      ebe,	s32	s32	s93	s32	s95	s32
+      02215 002105
+      02216 002025
+      02217 002105
+      02220 002034
+      02221 002105
+ 1187                   
+ 1188 02222 002222      ebe+6,
+IC illegal char              ^
+ 1189                   
+ 1190                   
+ 1191                   /terminator, pseudos
+ 1192                   
+ 1193                   te,	test0 trm, s1
+      02223 203230
+      02224 650100
+      02225 600664
+ 1194                   	sett sid, 1
+IC illegal blank        	     ^
+      02226 203355
+      02227 243276
+ 1195                   	zero tc
+      02230 343234
+ 1196                   	testel mm, 3u, te1
+      02231 203262
+      02232 503265
+      02233 602246
+ 1197                   	zero tjp
+      02234 343333
+ 1198                   	load mm
+      02235 203262
+ 1199                   	tles 3u, te9
+      02236 423265
+      02237 640200
+      02240 602244
+ 1200                   	complaint flexo mtl
+UD undefined            	     ^
+UD undefined            	           ^
+      02241 203351
+      02242 170427
+
+       harmony compiler  phase 1  : 5/21/63                              Page 43
+
+
+ 1201                   	goto te1
+      02243 602246
+ 1202                   te9,	complaint flexo mts
+UD undefined            	     ^
+UD undefined            	           ^
+      02244 203351
+      02245 170427
+ 1203                   
+ 1204                   te1,	test0 rob, te0
+      02246 203302
+      02247 650100
+      02250 602260
+ 1205                   	complaint flexo itg
+UD undefined            	     ^
+UD undefined            	           ^
+      02251 203351
+      02252 170427
+ 1206                   	zero rob
+      02253 343302
+ 1207                   	zero gi
+      02254 343303
+ 1208                   	zero gis
+      02255 343304
+ 1209                   	move nls, nl
+      02256 203301
+      02257 243255
+ 1210                   te0,	load (600000
+      02260 203435
+ 1211                   	call cn
+      02261 172040
+ 1212                   
+ 1213                   teb,	call sbc
+      02262 170210
+ 1214                   	putback bar, lmb
+      02263 403436
+      02264 262266
+      02265 203267
+      02266 240000
+ 1215                   	grow nl, 1, lmb
+      02267 203255
+IC illegal blank        	     ^
+      02270 403355
+      02271 243267
+ 1216                   	zero mm
+      02272 343262
+ 1217                   	call rcw
+      02273 170236
+ 1218                   	store mbh
+      02274 243266
+ 1219                   	zero ao
+      02275 343231
+ 1220                   	sett pfu, s1
+IC illegal blank        	     ^
+      02276 203437
+      02277 243306
+ 1221                   	goto pue
+      02300 602711
+
+       harmony compiler  phase 1  : 5/21/63                              Page 44
+
+
+ 1222                   
+ 1223                   
+ 1224                   pc,	zero tht
+      02301 343270
+ 1225                   pcr,	zero ucl
+      02302 343272
+ 1226                   	step1 tht
+      02303 443270
+ 1227                   	tgrec npi, pcz
+      02304 423352
+      02305 640500
+      02306 600646
+ 1228                   	load tht
+      02307 203270
+ 1229                   	lookup pnm-1
+      02310 403440
+      02311 262312
+      02312 200000
+ 1230                   	store zet
+      02313 243271
+ 1231                   	call rrc
+      02314 170243
+ 1232                   
+ 1233                   pc2,	call rch
+      02315 170252
+ 1234                   	store chr
+      02316 243235
+ 1235                   	trze pc3
+      02317 650100
+      02320 602324
+ 1236                   	trnl (21, pc4
+      02321 523352
+      02322 602326
+ 1237                   	zero chr
+      02323 343235
+ 1238                   pc3,	sett ucl, 1
+IC illegal blank        	     ^
+      02324 203355
+      02325 243272
+ 1239                   pc4,	load zet
+      02326 203271
+ 1240                   	lookup 0
+      02327 403351
+      02330 262331
+      02331 200000
+ 1241                   	trnl chr, pcr
+      02332 523235
+      02333 602302
+ 1242                   	test1 ucl, pc9
+      02334 203272
+      02335 640100
+      02336 602341
+ 1243                   	step1 zet
+      02337 443271
+ 1244                   	goto pc2
+      02340 602315
+ 1245                   pc9,	load tht
+
+       harmony compiler  phase 1  : 5/21/63                              Page 45
+
+
+      02341 203270
+ 1246                   	dispatch pcd-1
+      02342 403441
+      02343 262344
+      02344 610000
+ 1247                   
+ 1248 02345 002517      pcd,	pv1	pv2	pv3	pv4	pv5	pv6
+      02346 002522
+      02347 002525
+      02350 002570
+      02351 002535
+      02352 002540
+ 1249 02353 002543      	pv7	pv8	pv9	pva	pvb	pvc
+      02354 002546
+      02355 002551
+      02356 002662
+      02357 003021
+      02360 003122
+ 1250 02361 003077      	pvd	pve	pvf	pvg	pvh
+      02362 003107
+      02363 002527
+      02364 002532
+      02365 002651
+ 1251 02366 002407      pnm,	pn1	pn2	pn3	pn4	pn5	pn6
+      02367 002411
+      02370 002413
+      02371 002415
+      02372 002421
+      02373 002426
+ 1252 02374 002435      	pn7	pn8	pn9	pna	pnb	pnc
+      02375 002443
+      02376 002450
+      02377 002456
+      02400 002462
+      02401 002467
+ 1253 02402 002474      	pnd	pne	pnf	png	pnh
+      02403 002477
+      02404 002504
+      02405 002506
+      02406 002510
+ 1254                   
+ 1255 02407 000022      pn1,	22	0
+      02410 000000
+ 1256 02411 000043      pn2,	43	0
+      02412 000000
+ 1257 02413 000065      pn3,	65	0
+      02414 000000
+ 1258 02415 000065      pn4,	65	45	64	0
+      02416 000045
+      02417 000064
+      02420 000000
+ 1259 02421 000062      pn5,	62	61	22	22	0
+      02422 000061
+      02423 000022
+      02424 000022
+      02425 000000
+ 1260 02426 000023      pn6,	23	51	65	62	43	65	0
+
+       harmony compiler  phase 1  : 5/21/63                              Page 46
+
+
+      02427 000051
+      02430 000065
+      02431 000062
+      02432 000043
+      02433 000065
+      02434 000000
+ 1261 02435 000023      pn7,	23	65	45	46	51	0
+      02436 000065
+      02437 000045
+      02440 000046
+      02441 000051
+      02442 000000
+ 1262 02443 000061      pn8,	61	43	23	46	0
+      02444 000043
+      02445 000023
+      02446 000046
+      02447 000000
+ 1263 02450 000024      pn9,	24	45	71	23	22	0
+      02451 000045
+      02452 000071
+      02453 000023
+      02454 000022
+      02455 000000
+ 1264 02456 000042      pna,	42	65	30	0
+      02457 000065
+      02460 000030
+      02461 000000
+ 1265 02462 000051      pnb,	51	65	22	23	0
+      02463 000065
+      02464 000022
+      02465 000023
+      02466 000000
+ 1266 02467 000063      pnc,	63	46	47	30	0
+      02470 000046
+      02471 000047
+      02472 000030
+      02473 000000
+ 1267 02474 000024      pnd,	24	47	0
+      02475 000047
+      02476 000000
+ 1268 02477 000064      pne,	64	46	26	45	0
+      02500 000046
+      02501 000026
+      02502 000045
+      02503 000000
+ 1269 02504 000070      pnf,	70	0
+      02505 000000
+ 1270 02506 000050      png,	50	0
+      02507 000000
+ 1271 02510 000023      pnh,	23	65	44	47	46	0
+      02511 000065
+      02512 000044
+      02513 000047
+      02514 000046
+      02515 000000
+ 1272                   
+ 1273                   ps,	govia psw
+
+       harmony compiler  phase 1  : 5/21/63                              Page 47
+
+
+      02516 613275
+ 1274                   
+ 1275                   pv1,	sett ss, 200000	/s
+IC illegal blank        	     ^
+      02517 203414
+      02520 243237
+ 1276                   	goto psr
+      02521 602566
+ 1277                   pv2,	sett ss, 400000	/l
+IC illegal blank        	     ^
+      02522 203410
+      02523 243237
+ 1278                   	goto psr
+      02524 602566
+ 1279                   pv3,	zero ss		/e
+      02525 343237
+ 1280                   	goto psr
+      02526 602566
+ 1281                   pvf,	sett ss, 40000	/h
+IC illegal blank        	     ^
+      02527 203416
+      02530 243237
+ 1282                   	goto psr
+      02531 602566
+ 1283                   pvg,	sett ss, 20000	/q
+IC illegal blank        	     ^
+      02532 203415
+      02533 243237
+ 1284                   	goto psr
+      02534 602566
+ 1285                   
+ 1286                   pv5,	sett st, 12	/bass
+IC illegal blank        	     ^
+      02535 203442
+      02536 243242
+ 1287                   	goto psr
+      02537 602566
+ 1288                   pv6,	sett st, 26	/treble
+IC illegal blank        	     ^
+      02540 203356
+      02541 243242
+ 1289                   	goto psr
+      02542 602566
+ 1290                   pv7,	sett st, 16	/tenor	-- from 20, 070418
+IC illegal blank        	     ^
+      02543 203443
+      02544 243242
+ 1291                   	goto psr
+      02545 602566
+ 1292                   pv8,	sett st, 20	/alto  -- from 22, 070418
+IC illegal blank        	     ^
+      02546 203400
+      02547 243242
+ 1293                   	goto psr
+      02550 602566
+ 1294                   
+ 1295                   pv9,	sett ao, 1	/units
+
+       harmony compiler  phase 1  : 5/21/63                              Page 48
+
+
+IC illegal blank        	     ^
+      02551 203355
+      02552 243231
+ 1296                   	sett psw, p9a
+IC illegal blank        	     ^
+      02553 203444
+      02554 243275
+ 1297                   	goto te
+      02555 602223
+ 1298                   p9a,	load n1
+      02556 203214
+ 1299                   	store 1u
+      02557 243264
+ 1300                   	x2to1
+      02560 661001
+ 1301                   	addi n1
+      02561 403214
+ 1302                   	x2to1
+      02562 661001
+ 1303                   	store 3u
+      02563 243265
+ 1304                   	sett irl, -1
+IC illegal blank        	     ^
+      02564 203346
+      02565 243311
+ 1305                   
+ 1306                   psr,	zero ao
+      02566 343231
+ 1307                   	goto te
+      02567 602223
+ 1308                   
+ 1309                   pv4,	call sbc	/end
+      02570 170210
+ 1310                   	putback bar, (600000
+      02571 403436
+      02572 262574
+      02573 203435
+      02574 240000
+ 1311                   	feed 400
+      02575 710400
+      02576 170063
+ 1312                   	step1 nl
+      02577 443255
+ 1313                   	call ppp	/no. of notes
+      02600 170076
+ 1314                   	zero t2
+      02601 343337
+ 1315                   	zero t3
+      02602 343340
+ 1316                   p41,	load t3
+      02603 203340
+ 1317                   	lookup not
+      02604 403406
+      02605 262606
+      02606 200000
+ 1318                   	store t1
+      02607 243336
+
+       harmony compiler  phase 1  : 5/21/63                              Page 49
+
+
+ 1319                   	call ppp	/note entry
+      02610 170076
+ 1320                   	step t2, t1
+      02611 203337
+      02612 403336
+      02613 243337
+ 1321                   	step1 t3
+      02614 443340
+ 1322                   	trnl nl, p41
+      02615 523255
+      02616 602603
+ 1323                   	load t2
+      02617 203337
+ 1324                   	call ppp	/+checksum
+      02620 170076
+ 1325                   	feed 6
+      02621 710006
+      02622 170063
+ 1326                   	step1 bc
+      02623 443232
+ 1327                   	call ppp	/no. of bars
+      02624 170076
+ 1328                   	zero t2
+      02625 343337
+ 1329                   	zero t3
+      02626 343340
+ 1330                   p42,	load t3
+      02627 203340
+ 1331                   	complement
+      02630 761000
+ 1332                   	lookup bar
+      02631 403436
+      02632 262633
+      02633 200000
+ 1333                   	store t1
+      02634 243336
+ 1334                   	call ppp	/bar entry
+      02635 170076
+ 1335                   	step t2, t1
+      02636 203337
+      02637 403336
+      02640 243337
+ 1336                   	step1 t3
+      02641 443340
+ 1337                   	trnl bc, p42
+      02642 523232
+      02643 602627
+ 1338                   	load t2
+      02644 203337
+ 1339                   	call ppp	/+checksum
+      02645 170076
+ 1340                   	feed 300
+      02646 710300
+      02647 170063
+ 1341                   	goto u
+      02650 600113
+ 1342                   
+
+       harmony compiler  phase 1  : 5/21/63                              Page 50
+
+
+ 1343                   
+ 1344                   pvh,	sett ao, 1	/tempo
+IC illegal blank        	     ^
+      02651 203355
+      02652 243231
+ 1345                   	sett psw, pha
+IC illegal blank        	     ^
+      02653 203445
+      02654 243275
+ 1346                   	goto te
+      02655 602223
+ 1347                   pha,	load n1
+      02656 203214
+ 1348                   	addi (700000
+      02657 403446
+ 1349                   	call cn
+      02660 172040
+ 1350                   	goto psr
+      02661 602566
+ 1351                   
+ 1352                   key,
+ 1353                   pva,	call rch	/key
+      02662 170252
+ 1354                   	trze pva
+      02663 650100
+      02664 602662
+ 1355                   	ftrel (55, pum
+      02665 503447
+      02666 602675
+ 1356                   	ftrel (57, pus
+      02667 503450
+      02670 602724
+ 1357                   	trel (54, puf
+      02671 503451
+      02672 602727
+ 1358                   	call rrc
+      02673 170243
+ 1359                   	goto s1
+      02674 600664
+ 1360                   
+ 1361                   pum,	sett pfu, s1
+IC illegal blank        	     ^
+      02675 203437
+      02676 243306
+ 1362                   pun,	copy nt, kt, 44
+      02677 703652
+      02700 262703
+      02701 703606
+      02702 262704
+      02703 200000
+      02704 240000
+      02705 442703
+      02706 442704
+      02707 523452
+      02710 602703
+ 1363                   pue,	copy kt, mt, 44
+      02711 703606
+
+       harmony compiler  phase 1  : 5/21/63                              Page 51
+
+
+      02712 262715
+      02713 703542
+      02714 262716
+      02715 200000
+      02716 240000
+      02717 442715
+      02720 442716
+      02721 523453
+      02722 602715
+ 1364                   	govia pfu
+      02723 613306
+ 1365                   
+ 1366                   pus,	sett pfu, put
+IC illegal blank        	     ^
+      02724 203454
+      02725 243306
+ 1367                   	goto puh
+      02726 602731
+ 1368                   puf,	sett pfu, pug
+IC illegal blank        	     ^
+      02727 203455
+      02730 243306
+ 1369                   puh,	sett psw, pun
+IC illegal blank        	     ^
+      02731 203456
+      02732 243275
+ 1370                   	sett ao, 1
+IC illegal blank        	     ^
+      02733 203355
+      02734 243231
+ 1371                   	goto s1
+      02735 600664
+ 1372                   
+ 1373                   put,	sett acc, 1
+IC illegal blank        	     ^
+      02736 203355
+      02737 243245
+ 1374                   	sett aci, 4
+IC illegal blank        	     ^
+      02740 203371
+      02741 243244
+ 1375                   	sett tne, 3
+IC illegal blank        	     ^
+      02742 203367
+      02743 243252
+ 1376                   	goto puw
+      02744 602753
+ 1377                   pug,	sett acc, -1
+IC illegal blank        	     ^
+      02745 203346
+      02746 243245
+ 1378                   	sett aci, 3
+IC illegal blank        	     ^
+      02747 203367
+      02750 243244
+ 1379                   	sett tne, 6
+IC illegal blank        	     ^
+
+       harmony compiler  phase 1  : 5/21/63                              Page 52
+
+
+      02751 203421
+      02752 243252
+ 1380                   
+ 1381                   puw,	test0 n1, pw2
+      02753 203214
+      02754 650100
+      02755 603016
+ 1382                   	move tne, ton
+      02756 203252
+      02757 243251
+ 1383                   
+ 1384                   pw1,	load ton
+      02760 203251
+ 1385                   	lookup nt
+      02761 403425
+      02762 262763
+      02763 200000
+ 1386                   	addi acc
+      02764 403245
+ 1387                   	store t4
+      02765 243341
+ 1388                   	load ton
+      02766 203251
+ 1389                   	putback kt, t4
+      02767 403457
+      02770 262772
+      02771 203341
+      02772 240000
+ 1390                   	stepa ton, 7
+      02773 700007
+      02774 403251
+      02775 243251
+ 1391                   	tlesc 44, pw1
+      02776 423424
+      02777 640200
+      03000 602760
+ 1392                   	istepa n1, 1
+      03001 700002
+      03002 403214
+      03003 243214
+ 1393                   	step tne, aci
+      03004 203252
+      03005 403244
+      03006 243252
+ 1394                   	tlesc 7, puw
+      03007 423460
+      03010 640200
+      03011 602753
+ 1395                   	istepa tne,7
+      03012 700016
+      03013 403252
+      03014 243252
+ 1396                   	goto puw
+      03015 602753
+ 1397                   
+ 1398                   pw2,	sett pfu, psr
+IC illegal blank        	     ^
+
+       harmony compiler  phase 1  : 5/21/63                              Page 53
+
+
+      03016 203461
+      03017 243306
+ 1399                   	goto pue
+      03020 602711
+ 1400                   
+ 1401                   pvb,	sett ao, 1	/rest
+IC illegal blank        	     ^
+      03021 203355
+      03022 243231
+ 1402                   	test0 mm, pb2
+      03023 203262
+      03024 650100
+      03025 603031
+ 1403                   	error flexo ilr
+UD undefined            	     ^
+UD undefined            	           ^
+      03026 203351
+      03027 170436
+ 1404                   	goto i1a
+      03030 603134
+ 1405                   
+ 1406                   pb2,	sett psw, pb1
+IC illegal blank        	     ^
+      03031 203462
+      03032 243275
+ 1407                   	goto te
+      03033 602223
+ 1408                   pb1,	test0 n1, psr
+      03034 203214
+      03035 650100
+      03036 602566
+ 1409                   	testp irl, pb3
+      03037 203311
+      03040 640400
+      03041 603064
+ 1410                   	load 1u
+      03042 203264
+ 1411                   	addi (100
+      03043 403373
+ 1412                   	x2to1
+      03044 661001
+ 1413                   	store t1
+      03045 243336
+ 1414                   	call snl
+      03046 170224
+ 1415                   	store irl
+      03047 243311
+ 1416                   	putback not, t1
+      03050 403406
+      03051 263053
+      03052 203336
+      03053 240000
+ 1417                   	call snl
+      03054 170224
+ 1418                   	putback not, (600000
+      03055 403406
+      03056 263060
+
+       harmony compiler  phase 1  : 5/21/63                              Page 54
+
+
+      03057 203435
+      03060 240000
+ 1419                   	grow nl, 1, lmb
+      03061 203255
+IC illegal blank        	     ^
+      03062 403355
+      03063 243267
+ 1420                   
+ 1421                   pb3,	call sbc
+      03064 170210
+ 1422                   	putback bar, irl
+      03065 403436
+      03066 263070
+      03067 203311
+      03070 240000
+ 1423                   	istepa n1, 1
+      03071 700002
+      03072 403214
+      03073 243214
+ 1424                   	trnz pb3
+      03074 640100
+      03075 603064
+ 1425                   	goto psr
+      03076 602566
+ 1426                   
+ 1427                   pvd,	sett ao, 1	/up
+IC illegal blank        	     ^
+      03077 203355
+      03100 243231
+ 1428                   	sett psw, pd1
+IC illegal blank        	     ^
+      03101 203463
+      03102 243275
+ 1429                   	goto te
+      03103 602223
+ 1430                   pd1,	move n1, tll
+      03104 203214
+      03105 243305
+ 1431                   	goto psr
+      03106 602566
+ 1432                   
+ 1433                   
+ 1434                   pve,	sett ao, 1	/down
+IC illegal blank        	     ^
+      03107 203355
+      03110 243231
+ 1435                   	sett psw,pe1
+      03111 203464
+      03112 243275
+ 1436                   	goto te
+      03113 602223
+ 1437                   pe1,	load n1
+      03114 203214
+ 1438                   	trze pe2
+      03115 650100
+      03116 603120
+ 1439                   	complement
+
+       harmony compiler  phase 1  : 5/21/63                              Page 55
+
+
+      03117 761000
+ 1440                   pe2,	store tll
+      03120 243305
+ 1441                   	goto psr
+      03121 602566
+ 1442                   
+ 1443                   
+ 1444                   pvc,	sett ao, 2	/copy
+IC illegal blank        	     ^
+      03122 203365
+      03123 243231
+ 1445                   	test0 mm, cow
+      03124 203262
+      03125 650100
+      03126 603137
+ 1446                   	error flexo ilc
+UD undefined            	     ^
+UD undefined            	           ^
+      03127 203351
+      03130 170436
+ 1447                   i2a,	sett psw, i1a
+IC illegal blank        	     ^
+      03131 203465
+      03132 243275
+ 1448                   	goto te
+      03133 602223
+ 1449                   
+ 1450                   i1a,
+ 1451                   co1,	sett psw, psr
+IC illegal blank        	     ^
+      03134 203461
+      03135 243275
+ 1452                   	goto te
+      03136 602223
+ 1453                   
+ 1454                   cow,	sett psw, co2
+IC illegal blank        	     ^
+      03137 203466
+      03140 243275
+ 1455                   	goto te
+      03141 602223
+ 1456                   
+ 1457                   co2,	move n1, cbh
+      03142 203214
+      03143 243310
+ 1458                   	trze co3
+      03144 650100
+      03145 603151
+ 1459                   	tles tbc, co4
+      03146 423233
+      03147 640200
+      03150 603154
+ 1460                   co3,	error flexo blc
+UD undefined            	     ^
+      03151 203467
+      03152 170436
+ 1461                   	goto i1a
+
+       harmony compiler  phase 1  : 5/21/63                              Page 56
+
+
+      03153 603134
+ 1462                   co4,	sett psw, co5
+IC illegal blank        	     ^
+      03154 203470
+      03155 243275
+ 1463                   	goto te
+      03156 602223
+ 1464                   
+ 1465                   co5,	load n1
+      03157 203214
+ 1466                   	tgrel cbh, co7
+      03160 423310
+      03161 640400
+      03162 603166
+ 1467                   co6,	error flexo brc
+UD undefined            	     ^
+UD undefined            	           ^
+      03163 203351
+      03164 170436
+ 1468                   	goto psr
+      03165 602566
+ 1469                   
+ 1470                   co7,	istepa cbh, 1
+      03166 700002
+      03167 403310
+      03170 243310
+ 1471                   co8,	load cbh
+      03171 203310
+ 1472                   	complement
+      03172 761000
+ 1473                   	lookup bar
+      03173 403436
+      03174 263175
+      03175 200000
+ 1474                   	store t4
+      03176 243341
+ 1475                   	call sbc
+      03177 170210
+ 1476                   	putback bar, t4
+      03200 403436
+      03201 263203
+      03202 203341
+      03203 240000
+ 1477                   	step1 cbh
+      03204 443310
+ 1478                   	tles n1, co8
+      03205 423214
+      03206 640200
+      03207 603171
+ 1479                   	goto psr
+      03210 602566
+ 1480                   
+ 1481                   
+ 1482                   /temporary**2 storage
+ 1483                   
+ 1484 03211 000000      ldl,	0	/s1, s2: preceding char. numeric? 1/yes, 0/no.
+ 1485 03212 000000      ucd,	0	/s1: number of num. fields read
+
+       harmony compiler  phase 1  : 5/21/63                              Page 57
+
+
+ 1486 03213 000000      num,	0	/s1, rin: value of num. field
+ 1487 03214 000000      n1,	0	/s1: first number
+ 1488 03215 000000      n2,	0	/s1: last number of 1 or 2
+ 1489 03216 000000      psi,	0	/s1: character count
+ 1490 03217 000000      chi,	0	/s1: nun-numeric char. count
+ 1491 03220 000000      fc,	0	/s1, s2: fraction status
+ 1492 03221 000000      fu,	0	/s1, s2: fraction used
+ 1493 03222 000000      g,	0	/s1: count of g's
+ 1494 03223 000000      r,	0	/s1: count of r's
+ 1495 03224 000000      cm,	0	/s1: count of commas
+ 1496 03225 000000      rt,	0	/s1: right indicator: 0/num, 1/g, 2/cm.
+ 1497 03226 000000      lt,	0	/s1: left indicator: 0/num, 1/r, 2/cm.
+ 1498 03227 000000      tim,	0	/s1: running time
+ 1499 03230 000000      trm,	0	/s1: terminator
+ 1500 03231 000000      ao,	0	/ps: arguments outstanding
+ 1501 03232 000000      bc,	0	/te: bar count
+ 1502 03233 000000      tbc,	0	/sbc: bar count within tape
+ 1503 03234 000000      tc,	0	/s1: terminator count within measure
+ 1504 03235 000000      chr,	0	/s1, s2, pc, ri: character read
+ 1505 03236 000000      dig,	0	/s1: digit read
+ 1506 03237 000000      ss,	0	/s2: running status of sle indicator
+ 1507 03240 000000      sv,	0	/s2: value of ss for particular note
+ 1508 03241 000000      sr,	0	/s2: staff reloc. count
+ 1509 03242 000000      st,	0	/s2: staff location (0=subbass)
+ 1510 03243 000000      3i,	0	/s2: triplet ind.: 0/no, 100000/yes.
+ 1511 03244 000000      aci,	0	/s2: accid. ind.: 0/none, 1/sharp or flat, -1/natural.
+ 1512                   		/key: spacing
+ 1513 03245 000000      acc,	0	/s2, key: accid. count
+ 1514 03246 000000      et,	0	/s2: embell. temp.
+ 1515 03247 000000      ete,	0	/s2: embell. terminal
+ 1516 03250 000000      nf,	0	/cn: note forming
+ 1517 03251 000000      ton,	0	/s2, key: tone pointer to staff (mt); not changing
+ 1518 03252 000000      tne,	0	/s2, key: tone pointer to table; letter changing
+ 1519 03253 000000      tnd,	0	/s2: tne-1 for embell.
+ 1520 03254 000000      tnf,	0	/s2: tne+1 for embell.
+ 1521 03255 000000      nl,	0	/s2: note location in not
+ 1522 03256 000000      nft,	0	/s2: note formed, time part
+ 1523 03257 000000      nfp,	0	/s2: nft preserved from robbery
+ 1524 03260 000000      ex,	0	/s2: time for sustained note
+ 1525 03261 000000      cut,	0	/s2: time not available to trill loop
+ 1526 03262 000000      mm,	0	/s2: units*3 used in measure to date
+ 1527 03263 000000      tu,	0	/s2: units*3 used by current note
+ 1528 03264 000000      1u,	0	/ps: 1*units
+ 1529 03265 000000      3u,	0	/ps: 3*units
+ 1530 03266 000000      mbh,	0	/rch: pointer to beginning of measure in f
+ 1531 03267 000000      lmb,	0	/te: last measure starting index in not
+ 1532 03270 000000      tht,	0	/pc: index of pseudo under investigation
+ 1533 03271 000000      zet,	0	/pc: character position in pseudos
+ 1534 03272 000000      ucl,	0	/pc: switch internal to pc
+ 1535 03273 000000      bgm,	0	/pc: another switch
+ 1536 03274 000000      rn,	0	/rnd: random number
+ 1537 03275 000000      psw,	0	/ps: switch for return with argument
+ 1538                   
+ 1539 03276 000000      sid,	0	/s2: si delayed
+ 1540 03277 000000      nld,	0	/s2: nl delayed
+ 1541 03300 000000      ccc,	0	/s2: triplet status of last non-comma note
+ 1542 03301 000000      nls,	0	/s2: nl saved
+
+       harmony compiler  phase 1  : 5/21/63                              Page 58
+
+
+ 1543 03302 000000      rob,	0	/s2: time desired by grace notes
+ 1544 03303 000000      gi,	0	/s2: grace note indicator
+ 1545 03304 000000      gis,	0	/s2: gi saved
+ 1546 03305 000000      tll,	0	/pvd, pve: transposition semitone count
+ 1547 03306 000000      pfu,	0	/pf, key: identity check for title; switch: sh. or fl.
+ 1548 03307 000000      si,	0	/s2: 0/no sle in note; 1/sle
+ 1549 03310 000000      cbh,	0	/pvc: copy begins here
+ 1550 03311 000000      irl,	0	/pvb: is rest location?
+ 1551 03312 000000      np,	0	/pf: no. of parts
+ 1552 03313 000000      rii,	0	/ri: index on read
+ 1553 03314 000000      rij,	0	/ri: index on write or compare
+ 1554 03315 000000      riw,	0	/ri: switch for compare or write
+ 1555 03316 000000      bgs,	0	/rch: "end" counter
+ 1556 03317 000000      fi,	0	/rch: f index
+ 1557 03320 000000      ft,	0	/rch f top
+ 1558 03321 000000      pp,	0	/rch: saves character
+ 1559 03322 000000      ch,	0	/rch: character from tape
+ 1560 03323 000000      fl1,	0	/rch: location in f of last terminator
+ 1561 03324 000000      fl2,	0	/rch: loc. in f of last termin. before new word
+ 1562 03325 000000      chy,	0	/er: charac. from f to be printed
+ 1563 03326 000000      arg,	0	/er: flexo name of error
+ 1564 03327 000000      uin,	0	/er: internal switch
+ 1565 03330 000000      etc,	0	/er: internal terminator count
+ 1566 03331 000000      blc,	0	/er: bell count
+ 1567 03332 000000      mjp,	0	/er: last measure having error
+ 1568 03333 000000      tjp,	0	/er: termin. count in meas. for last error
+ 1569 03334 000000      emp,	0	/er: internal index on f
+ 1570 03335 000000      rb,	0	/red, blk: +1 blac, -1 red.
+ 1571 03336 000000      t1,	0
+ 1572 03337 000000      t2,	0
+ 1573 03340 000000      t3,	0
+ 1574 03341 000000      t4,	0
+ 1575                   
+ 1576       003342      constants
+ 1577                   
+ 1578       003542      mt=.-200	/from .-100, 2006-02-25  --prs.
+ 1579       003606      kt=mt+44
+ 1580       003652      nt=kt+44
+ 1581                   
+ 1582       003652      nt/	2	4	6	7	11	13
+      03652 000002
+      03653 000004
+      03654 000006
+      03655 000007
+      03656 000011
+      03657 000013
+ 1583 03660 000015      	15	16	20	22	23	25
+      03661 000016
+      03662 000020
+      03663 000022
+      03664 000023
+      03665 000025
+ 1584 03666 000027      	27	31	32	34	36	37
+      03667 000031
+      03670 000032
+      03671 000034
+      03672 000036
+
+       harmony compiler  phase 1  : 5/21/63                              Page 59
+
+
+      03673 000037
+ 1585 03674 000041      	41	43	45	46	50	52
+      03675 000043
+      03676 000045
+      03677 000046
+      03700 000050
+      03701 000052
+ 1586 03702 000053      	53	55	57	61	62	64
+      03703 000055
+      03704 000057
+      03705 000061
+      03706 000062
+      03707 000064
+ 1587 03710 000066      	66	67	71	73	75	76
+      03711 000067
+      03712 000071
+      03713 000073
+      03714 000075
+      03715 000076
+ 1588                   
+ 1589                   
+ 1590       007750      bar=7750
+ 1591       000000      f=0
+ 1592       003716      fb=.
+ 1593       000105      foo=105
+ 1594       004316      fw=fb+400
+ 1595       004516      fl=fw+200
+ 1596       004517      not=fl+1
+ 1597       003230      all=bar-not-1
+ 1598       000021      npi=pn1-pnm
+ 1599       004517      11a=not
+ 1600       007750      11b=bar
+ 1601       000113      11c=u
+ 1602                   
+ 1603                   
+ 1604       000113      start u
+      03342 000077
+      03343 000036
+      03344 000013
+      03345 000700
+      03346 777776
+      03347 777775
+      03350 003716
+      03351 000000
+      03352 000021
+      03353 000152
+      03354 004516
+      03355 000001
+      03356 000026
+      03357 003230
+      03360 000074
+      03361 000072
+      03362 004316
+      03363 000340
+      03364 000065
+      03365 000002
+      03366 000045
+
+       harmony compiler  phase 1  : 5/21/63                              Page 60
+
+
+      03367 000003
+      03370 000064
+      03371 000004
+      03372 000541
+      03373 000100
+      03374 000035
+      03375 000034
+      03376 000446
+      03377 000040
+      03400 000020
+      03401 000073
+      03402 000027
+      03403 000051
+      03404 000067
+      03405 000033
+      03406 004517
+      03407 117777
+      03410 400000
+      03411 502147
+      03412 275655
+      03413 002150
+      03414 200000
+      03415 020000
+      03416 040000
+      03417 100000
+      03420 000005
+      03421 000006
+      03422 617151
+      03423 000200
+      03424 000044
+      03425 003652
+      03426 003542
+      03427 000076
+      03430 000531
+      03431 002175
+      03432 002204
+      03433 400002
+      03434 002213
+      03435 600000
+      03436 007750
+      03437 000664
+      03440 002365
+      03441 002344
+      03442 000012
+      03443 000016
+      03444 002556
+      03445 002656
+      03446 700000
+      03447 000055
+      03450 000057
+      03451 000054
+      03452 243652
+      03453 243606
+      03454 002736
+      03455 002745
+      03456 002677
+      03457 003606
+
+       harmony compiler  phase 1  : 5/21/63                              Page 61
+
+
+      03460 000007
+      03461 002566
+      03462 003034
+      03463 003104
+      03464 003114
+      03465 003134
+      03466 003142
+      03467 003331
+      03470 003157
+
+      171 detected errors
+
+       harmony compiler  phase 1  : 5/21/63                              Page 62
+                                                                    Symbol Table
+
+    1  11A     4517   COPY    0067   FT     03320   PB2    03031   PV2    02522 
+    2  11B     7750   COW    03137   FTREL   0035   PB3    03064   PV3    02525 
+    3  11C     0113   CR     00202   FU     03221   PC     02301   PV4    02570 
+    4  1U     03264   CRX    00207   FW      4316   PC2    02315   PV5    02535 
+    5  22S    01463   CUT    03261   G      03222   PC3    02324   PV6    02540 
+    6  2S1    01477   DIG    03236   GI     03303   PC4    02326   PV7    02543 
+    7  2S2    01465   DISPAT  0062   GIS    03304   PC9    02341   PV8    02546 
+    8  2S3    01442   DISWIT  0063   GOTO    0003   PCD    02345   PV9    02551 
+    9  2S4    01521   DOUBLE  0061   GOVIA   0004   PCR    02302   PVA    02662 
+   10  2SA    02075  ?DTU     0000   GROW    0045   PCZ    00646   PVB    03021 
+   11  2SB    02076   EBD    02205   HALFOF  0060   PD1    03104   PVC    03122 
+   12  2SR    01312   EBE    02214   HALT    0012   PE1    03114   PVD    03077 
+   13  2SS    01315   EBL    02176   HALVE   0015   PE2    03120   PVE    03107 
+   14  3I     03243   EC     00540   HAP    00151   PF     00123   PVF    02527 
+   15  3U     03265   EC0    00534  ?HARMON  0000   PFR    00152   PVG    02532 
+   16  ACC    03245   EC1    00547  ?HUMAN   0000   PFU    03306   PVH    02651 
+   17  ACI    03244   EC2    00557   I1A    03134   PG     00125   PW1    02760 
+   18  ADDI    0002   EC3    00541   I2A    03131   PG1    00146   PW2    03016 
+   19  ALL     3230   EHA    00637  ?ILC     0000   PHA    02656   PZ2    00653 
+   20  ANSWER  0065  ?EIT     0000  ?ILR     0000  ?PHASE   0000   PZ3    00661 
+   21  AO     03231   EMP    03334   IRL    03311   PN1    02407   R      03223 
+   22 ?AOR     0000  ?EOR     0000  ?IS      0000   PN2    02411   RB     03335 
+   23  AP     00114   ER     00427   ISTEPA  0044   PN3    02413   RC1    00310 
+   24  ARG    03326   ER1    00436  ?ITG     0000   PN4    02415   RC2    00311 
+   25  BAND    0011   ERC    00444   KEY    02662   PN5    02421   RCC    00301 
+   26  BAR     7750   ERF    00470   KT      3606   PN6    02426   RCE    00330 
+   27 ?BBL     0000   ERK    00466   LDL    03211   PN7    02435   RCF    00405 
+   28  BC     03232   ERQ    00457   LMB    03267   PN8    02443   RCH    00252 
+   29  BGM    03273   ERR    00474   LOAD    0000   PN9    02450   RCS    00333 
+   30  BGS    03316   ERROR   0037   LOOKUP  0040   PNA    02456   RCU    00275 
+   31  BLC    03331   ERT    00446   LT     03226   PNB    02462   RCW    00236 
+   32  BLK    00604   ERX    00570   MBH    03266   PNC    02467   RCX    00426 
+   33  BLX    00616   ERY    00567   MJP    03332   PND    02474   RCY    00271 
+   34 ?BRC     0000   ET     03246   MM     03262   PNE    02477   RD0    00345 
+   35  CALL    0010   ET1    00507   MOVE    0023   PNF    02504   RD1    00354 
+   36  CBH    03310   ET2    00517   MT      3542   PNG    02506   RD2    00361 
+   37  CCC    03300   ET4    00520  ?MTL     0000   PNH    02510   RD3    00366 
+   38  CH     03322   ETC    03330  ?MTS     0000   PNM    02366   RD4    00373 
+   39  CHI    03217   ETE    03247   N1     03214   PP     03321   RDA    00351 
+   40  CHR    03235   ETI    00532   N2     03215   PPP    00076   RDP    00377 
+   41  CHY    03325   ETR    00531   NF     03250   PRINT   0071   RDT    00340 
+   42  CLEAR   0013   ETS    00527   NFP    03257   PS     02516   RED    00571 
+   43  CM     03224   EX     03260   NFT    03256   PSI    03216   REX    00603 
+   44  CN     02040   EXIT    0022   NL     03255   PSR    02566   RF1    00423 
+   45  CNX    02051   F       0000   NLD    03277   PSW    03275   RFC    00402 
+   46  CO1    03134   FB      3716   NLS    03301   PUE    02711   RFF    00425 
+   47  CO2    03142   FC     03220  ?NOR     0000   PUF    02727   RII    03313 
+   48  CO3    03151   FEE    00063   NOT     4517   PUG    02745   RIJ    03314 
+   49  CO4    03154   FEED    0041   NP     03312   PUH    02731   RIW    03315 
+   50  CO5    03157   FEX    00075   NPI     0021   PUM    02675   RN     03274 
+   51  CO6    03163   FI     03317  ?NPS     0000   PUN    02677   ROB    03302 
+   52  CO7    03166   FL      4516   NT      3652   PUP    00112   RP     00023 
+   53  CO8    03171   FL1    03323   NUM    03213   PUS    02724   RPR    00016 
+   54 ?COMPAL  0000   FL2    03324   P41    02603   PUT    02736   RRC    00243 
+   55 ?COMPIL  0000  ?FLEXO   0000   P42    02627   PUTBAC  0064   RRX    00251 
+   56  COMPLA  0036   FOO     0105   P9A    02556   PUW    02753   RRY    00645 
+   57  COMPLE  0014  ?FORGIV  0000   PB1    03034   PV1    02517   RRZ    00641 
+
+       harmony compiler  phase 1  : 5/21/63                              Page 63
+                                                                    Symbol Table
+
+   58  RT     03225   S2J    01357   SNL    00224   TRZE    0025 
+   59  RT2    00025   S2K    01371   SR     03241   TU     03263 
+   60  RTB    00057   S2L    01373   SS     03237   TYPE    0034 
+   61  RTX    00056   S2M    01375   ST     03242   U      00113 
+   62  RWX    00242   S2N    01377   STEP    0042  ?UAT     0000 
+   63  S1     00664   S2O    01401   STEP1   0007   UCD    03212 
+   64  S10    00700   S2P    01415   STEPA   0043   UCL    03272 
+   65  S11    00732   S2Q    01420   STORE   0001   UIN    03327 
+   66  S12    00707   S2R    01424   SUBT    0005  ?UNC     0000 
+   67  S13    00715   S2S    01525   SV     03240   WR     00000 
+   68  S14    00721   S2T    01514   SV2    01560   WR1    00002 
+   69  S15    00754   S2U    01544   SWX    00235   WRE    00015 
+   70  S16    00753   S2V    01563   T1     03336   WRITE   0033 
+   71  S17    00747   S2W    01541   T2     03337   WRX    00014 
+   72  S18    01013   S2Y    02150   T3     03340   X10DEC  0066 
+   73  S19    00777   S2Z    02122   T4     03341   X2TO1   0016 
+   74  S1A    01001   S30    01632   TBC    03233   X2TO3   0021 
+   75  S1B    01005   S31    01612   TC     03234   X2TO6   0017 
+   76  S1C    01007   S32    02105   TE     02223   X2TO7   0020 
+   77  S1D    01011   S33    02112   TE0    02260   XP     00137 
+   78  S1E    01041   S38    01403   TE1    02246   ZERO    0006 
+   79  S1F    01052   S39    02052   TE9    02244   ZET    03271 
+   80  S1G    01062   S3X    00633   TEB    02262 
+   81  S1H    01072   S40    01555   TEST0   0052 
+   82  S1J    01135   S41    01603   TEST1   0053 
+   83  S1K    01137   S42    01605   TESTEL  0056 
+   84  S1L    01157   S51    01433   TESTM   0055 
+   85  S1M    01171   S52    01435   TESTNL  0057 
+   86  S1N    01175   S69    01505   TESTP   0054 
+   87  S1O    01237   S70    02054  ?TEXT    0000 
+   88  S1P    01227   S71    01643  ?TFF     0000 
+   89  S1Q    01210   S72    01640   TGREC   0051 
+   90  S1S    01121   S73    01661   TGREL   0050 
+   91  S1T    01124   S75    02013   THT    03270 
+   92  S1V    00630   S76    01742  ?TIC     0000 
+   93  S1W    00625   S77    01746   TIM    03227 
+   94  S1X    00622   S78    02021   TJP    03333 
+   95  S1Y    00617   S79    01656   TLES    0046 
+   96  S1Z    00617   S81    01727   TLESC   0047 
+   97  S2     01243   S82    01736   TLL    03305 
+   98  S20    01254   S83    01740  ?TMC     0000 
+   99  S21    01264   S84    01764  ?TME     0000 
+  100  S24    01354   S85    01776  ?TMF     0000 
+  101  S25    01351   S86    02002  ?TMG     0000 
+  102  S26    01365   S93    02025  ?TMR     0000 
+  103  S27    01362   S95    02034  ?TMS     0000 
+  104  S28    01404   S99    01653   TND    03253 
+  105  S29    01412   SBC    00210   TNE    03252 
+  106  S2A    01321   SBX    00223   TNF    03254 
+  107  S2B    01304   SEARCH  0070  ?TO      0000 
+  108  S2C    01307  ?SETP1   0000   TON    03251 
+  109  S2D    01320  ?SETPA   0000   TREL    0031 
+  110  S2E    01323   SETT    0024   TRM    03230 
+  111  S2F    01327   SI     03307   TRMI    0030 
+  112  S2G    01333   SID    03276   TRNL    0032 
+  113  S2H    01336   SK1    01156   TRNZ    0026 
+  114  S2I    01343   SLI    01125   TRPL    0027 
