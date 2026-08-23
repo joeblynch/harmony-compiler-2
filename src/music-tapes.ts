@@ -1,6 +1,9 @@
 import type { MusicTapeInfo } from './shared-types';
 
 export const musicTapes: MusicTapeInfo[] = [
+  { url: 'tapes/m-g-r-1-c-110.bin',          title: 'm-g-r-1-c-110',                         artist: 'prs',                        tempo: 0,     voices: 4 },
+  { url: 'tapes/m-g-r-1-b-110.bin',          title: 'm-g-r-1-b-110',                         artist: 'prs',                        tempo: 0,     voices: 4 },
+  { url: 'tapes/m-g-r-1-b.bin',              title: 'm-g-r-1-b',                             artist: 'prs',                        tempo: 0,     voices: 4 },
   { url: 'tapes/m-g-r-1.bin',                title: 'm-g-r-1',                               artist: 'prs',                        tempo: 0,     voices: 4 },
   { url: 'tapes/m-g-r-1-a.bin',              title: 'm-g-r-1-a',                             artist: 'prs',                        tempo: 0,     voices: 4 },
   { url: 'tapes/BWV592-3.bin',               title: 'Concerto No. 1 in G 3rd movement',      artist: 'J.S. Bach',                  tempo: 0,     voices: 4 },
