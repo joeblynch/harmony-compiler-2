@@ -35,7 +35,7 @@ What each word *means*: every entry is the per-iteration **phase increment** for
 
 The values form an equal-tempered scale: each semitone is `2^(1/12) ≈ 1.0595` times the one below it. Check it on the low end — `1500 / 1416 = 1.0593` (c1 over b0), `1589 / 1500 = 1.0593` (cs1 over c1). The ratio holds all the way up; `50863 / 48008 = 1.0595` (cs6 over c6). Because the increment doubles every octave, an octave up is the same note one table-octave (12 entries) higher: e.g. c1 = 1500 and c2 = 3001 ≈ 2×.
 
-**Index 0 is the rest** — increment `0` means the phase never advances, the flag never toggles, and the voice is silent. The player uses pitch index 0 as a rest sentinel rather than carrying a separate "is-rest" bit.
+**Index 0 is the rest** — increment `0` means the phase never advances, the flag never toggles, and the voice is silent. The player uses pitch index 0 as a rest sentinel rather than carrying a separate "is-rest" bit. (Per the intermediate format, pitch index **1 is also a rest**, and the player's `cc3` collapses it to 0 with `sad (1; cla` — see the compass note below — so both 0 and 1 are silent, exactly as Samson's spec states, [*music_intermediate_format.pdf*](../../hc1d/prs-docs/music_intermediate_format.pdf).)
 
 Two endpoints are **commented out** and so contribute no words:
 
@@ -44,7 +44,9 @@ Two endpoints are **commented out** and so contribute no words:
 1069  912                   	/53887				/d6
 ```
 
-`as0` (1337) below `b0`, and `d6` (53887) above `cs6`, are present in the source as documentation of where the scale *would* continue but are excluded from the assembled table. The usable compass is therefore exactly **b0 … cs6** (table indices 1…63, 63 pitches plus the rest at 0). Note that `tun()` (at `212`) reads `pt` to build four slightly **detuned** copies at `300`/`400`/`500`/`600` octal (one per voice, for the chorus shimmer); `pt` itself is the un-detuned master.
+`as0` (1337) below `b0`, and `d6` (53887) above `cs6`, are present in the source as documentation of where the scale *would* continue but are excluded from the assembled table.
+
+The table holds indices 0…63 (`b0` at 1 through `cs6` at 63), but the **actually-playable compass is narrower**. Peter Samson's intermediate format defines the 6-bit pitch field as: `0` *or* `1` = rest, `2` = C1, `3`–`76` octal = the equal-tempered semitones, `77` octal (= 63 decimal) = CS6 ([*music_intermediate_format.pdf*](../../hc1d/prs-docs/music_intermediate_format.pdf)). So pitch index **1 is a rest, not a note** — and indeed the player's `cc3` forces it: `sad (1; cla` rewrites pitch index 1 to 0 ([`05-data-formats.md`](05-data-formats.md#2-the-per-voice-note-word)). The `b0` increment at `pt[1]` is therefore **vestigial** — present in the table but never sounded. The real playable range is **c1 … cs6** (indices 2…63), exactly **62 pitches**, which Samson describes as "the keys of a 61-key organ manual (plus one bonus pitch!)" — the bonus being the top CS6 ([*music-workflow.pdf*](../../hc1d/prs-docs/music-workflow.pdf), step 5). (The Harmony Compiler's range guards stop one short of this, at index 76; see [`../../hc1d/docs/12-scan2-note-emission.md`](../../hc1d/docs/12-scan2-note-emission.md).) Note that `tun()` (at `212`) reads `pt` to build four slightly **detuned** copies at `300`/`400`/`500`/`600` octal (one per voice, for the chorus shimmer); `pt` itself is the un-detuned master.
 
 ## `sb` (`2237`): saved bar pointers (reserved, not initialized)
 

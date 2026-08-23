@@ -87,13 +87,13 @@ At `s21` the character is a modifier. `load chr` reloads it. Then:
 | 3 | 61 | `a` | | 14 (0o16) | 26 | `w` |
 | 4 | 62 | `b` | | 15 (0o17) | 73 | `.` (period) |
 | 5 | 63 | `c` | | 16 (0o20) | 27 | `x` |
-| 6 (0o6) | 57 | `(` / `+` | | 17 (0o21) | 21 | `\|` (bar) |
+| 6 (0o6) | 57 | `(` / `+` | | 17 (0o21) | 21 | `/` (slash = bar) |
 | 7 (0o7) | 54 | `-` (minus) | | 18 (0o22) | 00 | space |
 | 8 (0o10) | 55 | `)` / `=` | | 19 (0o23) | 50 | `q` |
 | 9 (0o11) | 64 | `d` | | 20 (0o24) | 70 | `h` |
 | 10 (0o12) | 44 | `m` | | | | |
 
-(The FIODEC codes are taken verbatim from the in-source comments at lines 1147-1167. The `s2z+25,` boundary label is at line 1169, so all 21 entries -- including the trailing space/`q`/`h` -- are part of `s2z`. The musical meaning of each handler is partly inferred; see [the Scan-2 tables doc](14-scan2-tables.md) for the full glyph→handler correspondence.)
+(The FIODEC codes are taken verbatim from the in-source comments at lines 1147-1167. The `s2z+25,` boundary label is at line 1169, so all 21 entries -- including the trailing space/`q`/`h` -- are part of `s2z`. The musical meaning of each glyph is **specified by Samson** — `s l e h q` articulation classes (p. 6 §I.B.6), `a`/`b` staff relocation (pp. 4–5), `c` triplet (p. 4), `( ) -` accidentals (p. 5), `d m n u w p` embellishments (p. 7), `.`/`x` dotted-fraction (p. 3), `/` the bar (p. 8), in [*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf); see [the Scan-2 tables doc](14-scan2-tables.md) for the full glyph→handler correspondence.)
 
 `dispatch s2y` -- `dispatch` folds to the macro `dispat`, which expands to `add (s2y; dap .+1; jmp i`. With AC holding the matched index, this computes the address `s2y + index`, patches the very next word (`jmp i`) to that address, and jumps **indirectly** through table entry `s2y[index]`. `s2y` (lines 1170-1173) is the parallel jump table whose entries are the handler labels, in the same order as `s2z`:
 
@@ -104,7 +104,7 @@ s2y,	s2b	s2c	s2d	s2e	s2f	s2g
 	s2r	2sr	2ss
 ```
 
-So the glyph→handler map is: `s`→`s2b`, `l`→`s2c`, `e`→`s2d`, `a`→`s2e`, `b`→`s2f`, `c`→`s2g`, `(`→`s2h`, `-`→`s2i`, `)`→`s2j`, `d`→`s2k`, `m`→`s2l`, `n`→`s2m`, `p`→`s38`, `u`→`s2n`, `w`→`s2o`, `.`→`s2p`, `x`→`s2q`, `|`→`s2r`, space→`s2r`, `q`→`2sr`, `h`→`2ss`. The handlers begin at line 851; the `s2r`/`2sr`/`2ss` slots (reached by the bar `|`, space, `q`, `h` glyphs) belong to note formation and are covered in the next section.
+So the glyph→handler map is: `s`→`s2b`, `l`→`s2c`, `e`→`s2d`, `a`→`s2e`, `b`→`s2f`, `c`→`s2g`, `(`→`s2h`, `-`→`s2i`, `)`→`s2j`, `d`→`s2k`, `m`→`s2l`, `n`→`s2m`, `p`→`s38`, `u`→`s2n`, `w`→`s2o`, `.`→`s2p`, `x`→`s2q`, `/`→`s2r`, space→`s2r`, `q`→`2sr`, `h`→`2ss`. The handlers begin at line 851; the `s2r`/`2sr`/`2ss` slots (reached by the bar `/` (FIODEC `21`; the spec's measure bar / title terminator, [*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), pp. 1, 8 — earlier drafts rendered it `|`), space, `q`, `h` glyphs) belong to note formation and are covered in the next section.
 
 ## `s2b`/`s2c`/`2sr`/`2ss`/`s2d`/`s2a` -- slur/legato value (lines 851-861)
 
@@ -124,15 +124,15 @@ s2a,	setpa si, 1
 
 `sett A,B` loads the **literal** `B` into cell `A` (`lac (B; dac A`). Each of these handlers sets `sv` ("value of `ss` for particular note", line 1507) to a distinct bit pattern, then falls through to `s2a`. Note that `2sr` and `2ss` are *also* the `s2y` jump-table slots for the `q` and `h` glyphs (indices `0o23`/`0o24`); they share this code with the `s`/`l` dispatch but set the lower-order `sv` bits:
 
-| Handler | Glyph(s) dispatching here | `sv` value (octal) | Interpretation (inferred) |
+| Handler | Glyph(s) dispatching here | `sv` value (octal) | Articulation (per spec) |
 |---|---|---|---|
-| `s2b` | `s` | `200000` | slur/legato status, variant 1 |
-| `s2c` | `l` | `400000` | slur/legato status, variant 2 |
-| `2sr` | `q` | `20000` | slur/legato status, variant 3 |
-| `2ss` | `h` | `40000` | slur/legato status, variant 4 |
-| `s2d` | `e` | `0` | clear (no slur/legato value) |
+| `s2b` | `s` | `200000` | staccato (artic. value 4) |
+| `s2c` | `l` | `400000` | legato (value 8) |
+| `2sr` | `q` | `20000` | quarter (value 1) |
+| `2ss` | `h` | `40000` | half (value 2) |
+| `s2d` | `e` | `0` | eighth / default (value 0) |
 
-These are the `sle` (slur/legato/expression) status bits; `ss` holds the "running status of sle indicator" (line 1506) and `sv` its "value for particular note" (line 1507). The precise musical reading of each bit is inferred from the `sv`/`ss` comments and the consumed [note-word format](../../pdp1m13/docs/05-data-formats.md); document them as status flags rather than fixed musical meanings.
+These are the **articulation** letters; `ss` holds the "running status of sle indicator" (line 1506) and `sv` its "value for particular note" (line 1507). Their musical reading is **specified by Samson** — `s` staccato, `l` legato, `e` eighth (the default), `h` half, `q` quarter, with the sounded/silent fractions in his articulation table ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 6 §I.B.6) — and each `sv` value equals that letter's intermediate-format articulation code (`l`=8, `s`=4, `h`=2, `q`=1, `e`=0; [*music_intermediate_format.pdf*](../prs-docs/music_intermediate_format.pdf)), which the player's `cxt` table decodes back into the release fraction ([note-word format](../../pdp1m13/docs/05-data-formats.md)).
 
 `s2a, setpa si, 1` -- **`setpa` is a likely retype slip for `stepa`** (the symbol dump shows `setpa` undefined; the intended macro is `stepa J,I => law I; add J; dac J`, adding the literal `I` to cell `J`). Read as `stepa si, 1`, it adds the literal `1` to `si` ("0/no sle in note; 1/sle", line 1548) -- recording that a slur/legato mark occurred in this note. `goto s20` returns to the dispatch loop for the next character.
 
@@ -145,7 +145,7 @@ s2f,	istepa sr, 14
 	goto s20
 ```
 
-`stepa sr, 14` (`law 14; add sr; dac sr`) adds the literal `14` octal (= 12 decimal) to the staff-relocation count `sr`. `istepa sr, 14` (`law i 14; add sr; dac sr`) adds the literal *negative* `14` -- i.e. subtracts `14` from `sr` (the `i` in `law i` loads the ones-complement of the operand). `sr` is "staff reloc. count" (line 1508). `s2e` is reached for the glyph `a` and `s2f` for the glyph `b` (per the `s2z`/`s2y` mapping above); the `14`-step magnitude and the direction (raise vs. lower the note's staff position by some interval) are inferred -- the comment does not pin the musical interval. `goto s20` loops.
+`stepa sr, 14` (`law 14; add sr; dac sr`) adds the literal `14` octal (= 12 decimal) to the staff-relocation count `sr`. `istepa sr, 14` (`law i 14; add sr; dac sr`) adds the literal *negative* `14` -- i.e. subtracts `14` from `sr` (the `i` in `law i` loads the ones-complement of the operand). `sr` is "staff reloc. count" (line 1508). Per the spec, `a` refers the note to the **adjoining staff above** and `b` to the staff **below**, cumulatively ("`aa` refers to the second staff above"), with the highest available pitch the treble `a9` and the lowest the bass `b2` ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), pp. 4–5 §I.B.5.a, Fig. 8). An adjacent staff is one octave away in this numbering, which is why the step is `14` octal (= 12 semitones). `s2e` handles `a`, `s2f` handles `b`. `goto s20` loops.
 
 ## `s2g` -- triplet marker (lines 866-867)
 
@@ -154,7 +154,7 @@ s2g,	sett 3i, 100000
 	goto s20
 ```
 
-`s2g` is reached for the glyph `c`. `sett 3i, 100000` loads the literal `100000` octal into `3i` ("triplet ind.: 0/no, 100000/yes", line 1510). `100000` octal is the bit just below the sign bit set in an 18-bit word -- a high status bit copied later (at `s52`, next section: `move 3i, ccc`) into `ccc`, the "triplet status of last non-comma note" (line 1541). `goto s20` loops.
+`s2g` is reached for the glyph `c`. Per the spec the letter `c` marks a **triplet** — "play for two-thirds its usual duration … include the letter `c` anywhere in each note so affected" ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 4 §I.B.4.b). `sett 3i, 100000` loads the literal `100000` octal into `3i` ("triplet ind.: 0/no, 100000/yes", line 1510); `100000` is note-word bit 2 (the triplet bit `T` of the intermediate format's `AATAAPPPPPPDDDDDDD`), which the player reads to scale duration by 2 instead of 3. It is copied later (at `s52`, next section: `move 3i, ccc`) into `ccc`, the "triplet status of last non-comma note" (line 1541). `goto s20` loops.
 
 ## `s2h`/`s2i`/`s24`/`s25` -- sharp / flat accidental (lines 868-876)
 
@@ -180,7 +180,7 @@ If `aci` is non-negative:
 
 Both then reach `s25, sett aci, 1` -- record that a (signed) accidental of the sharp/flat kind is present (`aci = 1`). `goto s20` loops.
 
-`s24, complaint flexo nor` -- `complaint` folds to the macro `compla`; the operand is `flexo nor`, the FIODEC-packed 3-character error mnemonic `nor`. `compla U => lac (U; jda er`: load the literal error-name word and call the error typer `er`. `nor` is plausibly a "not natural / natural conflict" mnemonic -- the diagnostic typed when a sharp/flat collides with an already-recorded natural. (The expansion of `flexo` into a packed FIODEC word, and the `er`/`tyo` typing path, are **not emulator-verified**: the emulator does not implement `tyo`, and `flexo`/`text` are original-assembler pseudo-ops the modern re-assembly lacks. `er` types in red ribbon via `call red` at line 571. The exact gloss of `nor` is inferred.)
+`s24, complaint flexo nor` -- `complaint` folds to the macro `compla`; the operand is `flexo nor`, the FIODEC-packed 3-character error mnemonic `nor`. `compla U => lac (U; jda er`: load the literal error-name word and call the error typer `er`. **`nor` = "mixed accidentals → natural assumed"** (Samson's error table, [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11) — the diagnostic typed when a sharp/flat collides with an already-recorded natural; per the spec, "If `)` appears in the same note with `-` or `(`, the `)` takes precedence" ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 5 §I.B.5.b). (The expansion of `flexo` into a packed FIODEC word, and the `er`/`tyo` typing path, are **not emulator-verified**: the emulator does not implement `tyo`, and `flexo`/`text` are original-assembler pseudo-ops the modern re-assembly lacks. `er` types in red ribbon via `call red` at line 571.)
 
 ## `s2j`/`s26`/`s27` -- natural accidental (lines 877-883)
 
@@ -233,9 +233,9 @@ These six handlers select an **embellishment terminal** -- the kind of ornament 
 
 Note `s38` (selector `6`, glyph `p`) is the `s2y` entry at index `0o14`, which is why it is named out-of-sequence among the `s2*` labels; it falls straight into `s28` without its own `goto`.
 
-`s28, store et` (`dac et`) saves the selector in the embellishment-temp cell `et` (line 1514). `test0 ete, s29` expands to `lac ete; sza i; jmp s29` -- load the committed embellishment-terminal `ete`, and jump to `s29` if `ete = 0` (no embellishment committed yet). If `ete` is already non-zero, a second embellishment letter is being given for one note, so control falls through to `complaint flexo tme` -- the `tme` ("too many embellishments", gloss inferred) diagnostic (same not-emulator-verified error-path caveat). Whether or not it complained, `s29, move et, ete` (`lac et; dac ete`) copies the selector into `ete`, committing it, and `goto s20` loops.
+`s28, store et` (`dac et`) saves the selector in the embellishment-temp cell `et` (line 1514). `test0 ete, s29` expands to `lac ete; sza i; jmp s29` -- load the committed embellishment-terminal `ete`, and jump to `s29` if `ete = 0` (no embellishment committed yet). If `ete` is already non-zero, a second embellishment letter is being given for one note, so control falls through to `complaint flexo tme` -- **`tme` = "too many embellishments in note → last embellishment taken"** (Samson's error table, [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11; "If more than one embellishment is chosen for one note, the last one will be taken," [*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7). The same not-emulator-verified caveat applies to the typing path. Whether or not it complained, `s29, move et, ete` (`lac et; dac ete`) copies the selector into `ete`, committing it (the *last* letter wins) — and `goto s20` loops.
 
-The numeric selectors `1`-`6` index the parallel embellishment tables `ebl`/`ebd`/`ebe` (lines 1176-1186, listed in glyph order `d`,`m`,`n`,`u`,`w`,`p`) during note formation; see [the Scan-2 tables doc](14-scan2-tables.md).
+The numeric selectors `1`-`6` index the parallel embellishment tables `ebl`/`ebd`/`ebe` (lines 1176-1186, listed in glyph order `d`,`m`,`n`,`u`,`w`,`p`) during note formation. The ornaments these letters name are, per Samson's Fig. 11 ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7): `d` short mordent, `m` trill (without suffix), `n` trill with suffix, `u` turn, `w` trill (later composers), `p` praller; see [the Scan-2 tables doc](14-scan2-tables.md) and [`13-scan2-embellishments.md`](13-scan2-embellishments.md).
 
 ## `s2p`/`s2q` -- fraction (dotted-note) adjustment (lines 902-904)
 

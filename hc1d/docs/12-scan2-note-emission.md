@@ -23,6 +23,8 @@ Throughout, recall the calling convention: `call S` = `jda S` (deposit AC into c
 
 The variable comments at lines 1506-1546 are the authority for these meanings; the *musical* reading of several is inferred and flagged as such.
 
+> **The 3-letter complaint codes are authoritative, not inferred.** Several `complaint flexo XYZ` codes raised below were originally glossed as "inferred." They are in fact defined in Peter Samson's error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11, "Figure 4 ERRORS"), and the bracketed `[xyz]` markers in the language spec ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf)) cross-reference them. The ones this file raises: **`tms`** = "too many `s`/`l`/`e` in note" (last occurrence rules); **`itg`** = "insufficient time for grace notes" (grace note(s) ignored); **`tic`** = "time in comma note" (comma ignored); **`air`** = "accidental in rest" (accidental ignored); **`uat`** = "unavailable tone" (note replaced by rest — exactly the `goto s2w` rest fallback below); **`aor`** = "accidental out of range" (note replaced by rest); **`etr`** = "embellishment in triplet" (embellishment ignored); **`eit`** = "embellishment on illegal time" (embellishment ignored); **`eor`** = "embellishment out of range" (embellishment ignored). The glosses below are updated to these official meanings; only the byte-level *Flexowriter typing* remains "not emulator-verified."
+
 ---
 
 ## `s2r` / `s51` / `s52` (906-912) — finalize the `sle` status `ss`/`sv`
@@ -38,7 +40,7 @@ s52,	test1 cm, s69
 
 - `test0 si, s51` → `lac si; sza i; jmp s51`: if `si == 0` (no `sle` marker in this token) jump to `s51`.
 - `trel (1, s52` → `sad (1; jmp s52`: AC still holds `si`; `sad (1` skips the `jmp` when AC differs from 1, so the jump to `s52` is taken when `si == 1` (the legal "one `sle`" case).
-- Falling through means `si > 1`: `complaint flexo tms` → `lac (flexo tms; jda er` types the non-fatal complaint **`tms`** ("too many `sle`s", inferred from the code) and continues. (`er` and the `flexo`-packed 3-char code are I/O / Flexowriter mechanisms — not emulator-verified.)
+- Falling through means `si > 1`: `complaint flexo tms` → `lac (flexo tms; jda er` types the non-fatal complaint **`tms`** — "too many `s`/`l`/`e` in note" (last occurrence rules), per the error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11) — and continues. (`er` and the `flexo`-packed 3-char code are I/O / Flexowriter mechanisms — not emulator-verified.)
 - `s51, move ss, sv` → `lac ss; dac sv`: when there is **no** explicit per-note `sle`, copy the **running default** status `ss` into the per-note value `sv`. `ss` ("running status of sle indicator", line 1506) is set by the *pseudo-command* handlers `pv1`/`pv2`/`pv3`/`pvf`/`pvg` (the `s`/`l`/`e`/`h`/`q` pseudos, lines 1275-1283). The **per-token** articulation markers `s2b`/`s2c`/`2sr`/`2ss`/`s2d` (lines 851-859) instead set `sv` *directly* and set `si = 1` (via `s2a`). So if `si` was set, `sv` was already loaded by those token handlers and `s51` is skipped; otherwise the carried-over default `ss` becomes `sv`.
 - `s52, test1 cm, s69` → `lac cm; sza; jmp s69`: if the comma count `cm != 0` jump to `s69` (the comma path — a comma means "continue the previous note's triplet grouping"). Otherwise (`cm == 0`) fall through:
 - `move 3i, ccc` → `lac 3i; dac ccc`: record this (non-comma) note's triplet status into `ccc` ("triplet status of last non-comma note", line 1541), so a later comma note can inherit it at `s69`. Control then falls into `2s3`.
@@ -93,7 +95,7 @@ Reached when the (already reduced) `nft` came out too small. `load nft; tgrel ro
 
 - `move nls, nl` → `lac nls; dac nl`: restore the saved note location `nls` into `nl`, **rewinding** the `not` buffer pointer so the grace notes already appended get discarded.
 - `zero rob` → `dzm rob`.
-- `complaint flexo itg` → `lac (flexo itg; jda er`: types the **`itg`** complaint ("insufficient time for grace", per the assignment brief and the matching use at `te`). (Not emulator-verified.)
+- `complaint flexo itg` → `lac (flexo itg; jda er`: types the **`itg`** complaint — "insufficient time for grace notes" (grace note(s) ignored), per the error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11). (Flexowriter typing not emulator-verified.)
 - `goto 2s3`: re-enter `2s3` to reform this note now with `rob == 0` (so it keeps its full time). This is the recovery path.
 
 ### `2s1` (935-937) — this token *is* a grace note: accrue robbery
@@ -126,7 +128,7 @@ Reached from `s52` when `cm != 0` (a comma). A comma continues the previous note
 - `test1 3i, s2t` → `lac 3i; sza; jmp s2t`: if this comma note already has its own triplet flag set, keep it (`s2t`). Otherwise:
 - `move ccc, 3i` → `lac ccc; dac 3i`: inherit the triplet status of the **last non-comma note** (`ccc`, set at `s52`). This is how a comma-separated continuation stays inside the same triplet grouping.
 - `s2t, test0 fu, 2s4` → `lac fu; sza i; jmp 2s4`: if the fraction-used `fu == 0` (no dotted fraction pending), proceed to `2s4`. Otherwise:
-- `complaint flexo tic` → types the **`tic`** complaint (inferred "time/comma" inconsistency — a fraction across a comma; not emulator-verified).
+- `complaint flexo tic` → types the **`tic`** complaint — "time in comma note" (comma ignored), per the error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11): a comma copies the previous duration, so specifying a time (here a pending dotted fraction `fu`) in a comma note is rejected. (Flexowriter typing not emulator-verified.)
 - `2s4, test1 g, 2s1` / `zero gi`: same grace-vs-normal fork as in `2s3` (a comma can itself be a grace), then clear `gi` on the normal path. Note this rejoins the **shared** tone-formation entry `s2s`.
 
 ---
@@ -151,7 +153,7 @@ s2w,	sett tne, 200
 - `test0 lt, s2u` → `lac lt; sza i; jmp s2u`: if the **left indicator** `lt == 0` (a normal pitched note begins with a number), jump to `s2u` to form a real tone. A non-zero `lt` means the token began with `r` (rest) or a comma (`lt`: `0`/num, `1`/r, `2`/cm — line 1497), so this is a **rest**:
 - `tgrec 1, sv2` → `sub (1; sma+sza-skp; jmp sv2`: `tgrec C` jumps if AC **>** literal C; here it jumps to `sv2` if `lt > 1` (i.e. `lt == 2`, a comma-rest), where `sv2` re-checks the `sle` status. Falling through means `lt == 1` (an explicit rest `r`).
 - `load aci; addi ete` → `lac aci; add ete`: a rest must carry neither an accidental nor an embellishment. `trze s2w` → `sza i; jmp s2w`: if `aci + ete == 0` (clean rest), jump to `s2w`. Otherwise:
-- `complaint flex air` — **`flex` is a likely retype slip for `flexo`** (the original pseudo-op); types the **`air`** complaint (inferred: an accidental/embellishment illegally applied to a rest — "air" = a rest position has no pitch; not emulator-verified).
+- `complaint flex air` — **`flex` is a likely retype slip for `flexo`** (the original pseudo-op); types the **`air`** complaint — "accidental in rest" (accidental ignored), per the error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11). The spec names only the accidental; the code's `aci + ete` test also catches an embellishment on a rest. (Flexowriter typing not emulator-verified.)
 - `s2w, sett tne, 200` → `lac (200; dac tne`: a rest is encoded by setting the pitch pointer `tne` to the sentinel **`200`** (octal). `goto s70`: jump straight to emission — a rest is never split into note + release and **does not** pass through the `x2to7` at `s31` (see the cross-check at the end for how `200` lands as pitch index `1`).
 
 ### `s2u` (958-965) — compute `ton` (staff → table pointer) with range guard
@@ -169,9 +171,9 @@ s40,	complaint flexo uat
 
 - `load n1; addi sr; addi st` → `lac n1; add sr; add st`: the staff position is the note's number `n1` plus the staff relocation `sr` (octave shifts) plus the staff location `st` (base, `0` = subbass). The sum is the index into the **momentary tone table `mt`**.
 - `store ton` → `dac ton`: `ton` is the "tone pointer to staff (`mt`); not changing" (line 1517). It indexes the per-staff `mt` table.
-- `trmi s40` → `spa; jmp s40`: if `ton < 0`, jump to the **`uat`** ("unavailable tone" / out of staff range, inferred) complaint at `s40`.
+- `trmi s40` → `spa; jmp s40`: if `ton < 0`, jump to the **`uat`** complaint at `s40` — "unavailable tone" (note replaced by rest), per the error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11). The spec's "note replaced by rest" effect is exactly the `goto s2w` rest fallback here.
 - `tlesc 44, s2v` → `sub (44; spa; jmp s2v`: if `ton < 44` (octal — `kt = mt+44`, line 1579, so the `mt` table occupies positions `mt`..`mt+43`, i.e. 44 octal entries) jump to `s2v` to proceed. Otherwise it falls into `s40`.
-- `s40, complaint flexo uat; goto s2w`: out-of-range → complain (not emulator-verified) and emit a rest (`s2w` sets `tne=200`). So an out-of-range pitch degrades gracefully to a rest rather than indexing outside the tables.
+- `s40, complaint flexo uat; goto s2w`: out-of-range → complain ("unavailable tone"; Flexowriter typing not emulator-verified) and emit a rest (`s2w` sets `tne=200`). So an out-of-range pitch degrades gracefully to a rest rather than indexing outside the tables — matching the spec's "uat → note replaced by rest."
 
 ### `sv2` (967) and `s2v` (968-980) — `sle`-on-comma-rest, then apply the accidental
 
@@ -197,7 +199,7 @@ s42,	load ton
 - `addi acc` → `add acc`: add the **signed** accidental `acc` (positive semitones for sharps, negative for flats — set together with `aci` by `s2h`/`s2i`/`s2j` at lines 868-883; `aci` only flags presence vs. natural). `store t1` → `dac t1`: the adjusted semitone value.
 - `tlesc 2, s41` → `sub (2; spa; jmp s41`: range-check low end — jump to `s41` (error) if `t1 < 2`.
 - `load t1; tlesc 77, s42` → `lac t1; sub (77; spa; jmp s42`: jump to `s42` (commit) if `t1 < 77`. (So the valid adjusted semitone is `2 <= t1 < 77`.)
-- `s41, compalint flexo aor` — **`compalint` is a likely retype slip for `complaint`** (the symbol dump shows it undefined; the intended macro is `compla`). Types the **`aor`** complaint ("accidental out of range", inferred; not emulator-verified) and emits a rest via `goto s2w`.
+- `s41, compalint flexo aor` — **`compalint` is a likely retype slip for `complaint`** (the symbol dump shows it undefined; the intended macro is `compla`). Types the **`aor`** complaint — "accidental out of range" (note replaced by rest), per the error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11) — and emits a rest via `goto s2w`, exactly that "replaced by rest" effect. (Flexowriter typing not emulator-verified.)
 - `s42, load ton; putback mt, t1` → `lac ton; add (mt; dap .+2; lac t1; dac .`: `putback U,Q` is the indexed **store** — compute address `mt + ton`, then store `t1` there. This writes the accidental-adjusted semitone back into the **momentary tone table `mt`** at the staff position, so the accidental persists for the rest of the measure (the "momentary" semantics — `mt` is reset elsewhere). Then falls into `s31`.
 
 The three-table model is now visible: **`nt`** (canonical scale, never modified) → **`kt`** (after key signature, set by the `key` pseudo) → **`mt`** (after a momentary accidental, written here). `s2v` reads `nt`, adjusts, and writes `mt`; the actual pitch comes out of `mt` next.
@@ -228,10 +230,12 @@ s72,	complaint flexo etr
 - `store tne` → `dac tne`: `tne` is the "tone pointer to table; letter changing" (line 1518) — the pitch index, *before* it is shifted into note-word position.
 - `tlesc 2, s40` → `sub (2; spa; jmp s40`: low-range guard, jump to `s40` (out-of-range → rest) if `tne < 2`.
 - `load tne; tgrec 76, s40` → `lac tne; sub (76; sma+sza-skp; jmp s40`: high-range guard — `tgrec` jumps if AC **>** 76, so a pitch index **> 76** goes to `s40`. So the valid pitch index is `2..76` octal; `77` and up are rejected.
+
+> **Producer caps one semitone below the format's top.** The intermediate format defines pitch index `77` octal as the top note **CS6** — the "one bonus pitch" above the 61-key organ manual ([*music_intermediate_format.pdf*](../prs-docs/music_intermediate_format.pdf); [*music-workflow.pdf*](../prs-docs/music-workflow.pdf), step 5). But hc1d's principal-tone guard here (and the neighbor-tone guards in `s73`) reject anything `> 76`, so **the compiler never emits the top CS6 itself** — that index is reachable only on the player side. A minor producer/spec mismatch worth noting; it does not break the contract (everything hc1d emits is in-range for the player).
 - `load tne; x2to7; store tne` → `lac tne; ral 7s; dac tne`: rotate the pitch left by 7 (`ral 7s`) into its note-word position. A 6-bit value shifted left 7 lands in **bits 5-10** (MSB-indexed) — exactly the player's pitch field (e.g. pitch `77` → `017600`). `tne` now holds the pitch *pre-positioned* for the final OR.
 - `s30, test0 ete, s70` → `lac ete; sza i; jmp s70`: if there is **no embellishment** (`ete == 0`), jump straight to the emission tail `s70` — a plain note. Otherwise this note has an embellishment (1..6):
 - `test0 3i, s71` → `lac 3i; sza i; jmp s71`: an embellishment is only legal on a **non-triplet** note here; if `3i == 0` jump to `s71` to expand it. If `3i != 0` (triplet + embellishment):
-- `s72, complaint flexo etr; goto s70` → types the **`etr`** complaint ("embellishment + triplet", inferred conflict; not emulator-verified) and emits the plain note. (Note the flexo code `etr` is unrelated to the `etr` *label* at line 606 in the error routine — it is just the FIODEC packing of the three characters.)
+- `s72, complaint flexo etr; goto s70` → types the **`etr`** complaint — "embellishment in triplet" (embellishment ignored), per the error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11) — and emits the plain note. The spec confirms embellishments may not be called for on triplet notes ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7). (Note the flexo code `etr` is unrelated to the `etr` *label* at line 606 in the error routine — it is just the FIODEC packing of the three characters. Flexowriter typing not emulator-verified.)
 
 ---
 
@@ -239,16 +243,16 @@ s72,	complaint flexo etr
 
 A non-triplet embellished note expands into **several** emitted note words (the trill/mordent/turn figure). This is driven by three parallel tables indexed by `ete-1` (lines 1176-1188):
 
-| Index | `ete` value | `ebl` (time budget) | `ebd` dispatch | `ebe` dispatch | `ebl` source letter |
-|---|---|---|---|---|---|
-| 0 | 1 | `6` | `s81` | `s32` | `d` |
-| 1 | 2 | `4` | `s82` | `s32` | `m` |
-| 2 | 3 | `10` | `s83` | `s93` | `n` |
-| 3 | 4 | `10` | `s84` | `s32` | `u` |
-| 4 | 5 | `4` | `s85` | `s95` | `w` |
-| 5 | 6 | `5` | `s86` | `s32` | `p` |
+| Index | `ete` value | `ebl` (time budget) | `ebd` dispatch | `ebe` dispatch | letter | ornament (per spec) |
+|---|---|---|---|---|---|---|
+| 0 | 1 | `6` | `s81` | `s32` | `d` | short mordent |
+| 1 | 2 | `4` | `s82` | `s32` | `m` | trill (without suffix) |
+| 2 | 3 | `10` | `s83` | `s93` | `n` | trill with suffix |
+| 3 | 4 | `10` | `s84` | `s32` | `u` | turn |
+| 4 | 5 | `4` | `s85` | `s95` | `w` | trill (later composers) |
+| 5 | 6 | `5` | `s86` | `s32` | `p` | praller (pralltriller) |
 
-(The single-letter names `d m n u w p` come directly from the `ebl` source comments at lines 1176-1181. The musical meaning of each figure — trill, mordent, turn, grace — is **inferred** and is *not* asserted here.)
+The single-letter names `d m n u w p` come directly from the `ebl` source comments at lines 1176-1181. The **ornament each letter denotes is no longer inferred**: it is given in Peter Samson's embellishment figure ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7 / [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 7, Fig. 11), whose symbols follow C. P. E. Bach's *Essay on the True Art of Playing Keyboard Instruments*. These names fit the code: `d` (short mordent) emits two notes, `u` (turn) emits the upper-principal-lower three-note shape, `m`/`n` run the trill loop (`n` adding a closing turn via `s93`), and `p` (praller) emits a three-note flick. The detailed step-by-step note ordering of each generator remains read from the code.
 
 ### `s71` (995-1005) — compute the sustained time `ex`
 
@@ -268,7 +272,7 @@ s79,	complaint flexo eit
 - `subt nft` → `sub nft`: AC := `ebl[ete-1] − nft`. `trze s99` → `sza i; jmp s99`: if the difference is exactly 0, skip the negate and go to `s99`. Otherwise `complement` (= `cma`, ones-complement) negates AC, so it now holds `nft − ebl[ete-1]`.
 - `s99, store ex` → `dac ex`: `ex` = "time for sustained note" (line 1524). On the difference-nonzero path `ex = nft − ebl[ete-1]`; on the equal path `ex = 0`. (`store` does not touch AC.)
 - `trpl s73` → `sma; jmp s73`: tests AC, which now holds the (possibly negated) value just stored in `ex`. Jump to `s73` to expand when AC **>= 0**, i.e. when `nft >= ebl[ete-1]` — the note has at least as much time as the embellishment figure needs, and `ex` is the non-negative leftover sustain. Otherwise (the note is too short):
-- `s79, complaint flexo eit; goto s70` → types the **`eit`** complaint ("embellishment insufficient time", inferred; not emulator-verified) and emits the plain note.
+- `s79, complaint flexo eit; goto s70` → types the **`eit`** complaint — "embellishment on illegal time" (embellishment ignored), per the error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11): the note is too short to hold the figure. The spec notes each embellishment has a minimum duration ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7). It emits the plain note. (Flexowriter typing not emulator-verified.)
 
 ### `s73` (1007-1030) — build the neighbor tones `tnf`/`tnd`, then dispatch
 
@@ -296,7 +300,7 @@ s73,	load ton
 
 This computes the **upper neighbor** `tnf` (= `tne+1` semantically, line 1520) and **lower neighbor** `tnd` (= `tne-1`, line 1519):
 
-- `load ton; addi (1; lookup mt` → fetch `mt[ton+1]` (the next staff position up), `addi tll` (transpose), `store tnf`, range-guard (`tlesc 2,s39` / `tgrec 76,s39` to the **`eor`** complaint at `s39`, "embellishment out of range", inferred), then `x2to7` to position it as a pitch field. `tnf` is the upper auxiliary.
+- `load ton; addi (1; lookup mt` → fetch `mt[ton+1]` (the next staff position up), `addi tll` (transpose), `store tnf`, range-guard (`tlesc 2,s39` / `tgrec 76,s39` to the **`eor`** complaint at `s39` — "embellishment out of range" (embellishment ignored), per the error table, [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11; the spec notes an embellishment is illegal if any note it generates is out of range, [*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7), then `x2to7` to position it as a pitch field. `tnf` is the upper auxiliary.
 - The symmetric block with `subt (1` builds `tnd` from `mt[ton-1]` (lower auxiliary).
 - `load ete; dispatch ebd-1` → `lac ete; add (ebd-1; dap .+1; jmp i .`: computed jump through `ebd[ete-1]` — i.e. to one of `s81`/`s82`/`s83`/`s84`/`s85`/`s86`, the "first half" of the figure for this embellishment.
 
@@ -465,7 +469,7 @@ The note word combined at `s70` is:
 | 5-10 | 6 | **pitch** | `tne` after `x2to7` | index `2..76` octal |
 | 11-17 | 7 | **time / duration** | `nft` | in time units |
 
-This **reconciles exactly** with the consumer's decode in [pdp1m13/docs/05-data-formats.md §2](../../pdp1m13/docs/05-data-formats.md): there `cc3` extracts articulation from bits {0,1} (first `rcl 2s`), the triplet from bit 2 (`spi`→`stf 6`), articulation bits {3,4} (second `rcl 2s` after `ril 1s`), **pitch** from bits 5-10 (`rcl 6s`), and **duration** from bits 11-17 (`rcl 7s`). The producer here:
+This **reconciles exactly** with the consumer's decode in [pdp1m13/docs/05-data-formats.md §2](../../pdp1m13/docs/05-data-formats.md), and with Peter Samson's spec: the 18-bit Encoded note is **`AATAAPPPPPPDDDDDDD`** — two articulation bits, the triplet bit `T`, two more articulation bits, 6-bit pitch, 7-bit duration ([*music_intermediate_format.pdf*](../prs-docs/music_intermediate_format.pdf)). So the producer layout below is not merely "inferred to match the consumer" — it is the documented format. There `cc3` extracts articulation from bits {0,1} (first `rcl 2s`), the triplet from bit 2 (`spi`→`stf 6`), articulation bits {3,4} (second `rcl 2s` after `ril 1s`), **pitch** from bits 5-10 (`rcl 6s`), and **duration** from bits 11-17 (`rcl 7s`). The producer here:
 
 - writes the **two** high articulation bits and **two** low articulation bits via the disjoint `sv` constants `400000`/`200000`/`40000`/`20000` — matching the consumer's split of the 4-bit `cxt` index across bits {0,1} and {3,4},
 - writes the triplet bit `100000` (bit 2) via `3i` — matching the consumer's `spi`/`stf 6` triplet detection,

@@ -45,6 +45,8 @@ Three small `jda`/`jsp` subroutines that the compiler calls during setup: `tpo` 
 
 The cumulative scaling is `tpm ≈ ((seed·tpg / 252) · tpf <<5 · 1131) <<9`, all in ones-complement fixed point. The exact musical units aren't important here; the structure is: combine the user's test-word tempo (`tpg`) with the seed and two tuning constants (`tpf`, `1131`), reshifting after each multiply to keep the fixed-point scale, to land on a per-segment loop-count multiplier.
 
+> This `seed × tpg ÷ 252 × tpf(loc 12) …` structure matches Peter Samson's documented tempo formula for the successor player `pdp1m16`: final tempo = **A** (the tape/seed value, default **`252` octal**) × **B** (contents of **location `12` octal**, the "fudge" `tpf`) × **C** (the **Test Word**, valid **`40`–`1377` octal**, divided by `252`); "smaller values are faster" ([*music_flow16.pdf*](../../hc1d/prs-docs/music_flow16.pdf)). The default seed `252` octal here is the same constant the intermediate format gives as the default tempo word ([*music_intermediate_format.pdf*](../../hc1d/prs-docs/music_intermediate_format.pdf)), and the TW range matches `audio-client.ts`. (`pdp1m13` predates `pdp1m16`, but the tempo arithmetic is the same shape.)
+
 ```
 1625        cla         / AC := 0
 1626        lio (17760  / "7770 and a null bit" : the reciprocal numerator

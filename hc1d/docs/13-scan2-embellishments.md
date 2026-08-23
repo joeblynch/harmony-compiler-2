@@ -12,9 +12,12 @@ array that *PDP-1 Music 13* later reads (the producer side of
 This is the **highest-risk region** of the whole file to interpret: the code is
 table-driven (`ebl`/`ebd`/`ebe`), heavily self-modifying, and arithmetic on tone pointers
 is mixed with arithmetic on *time* values inside the same words. The *mechanics* below are
-read directly from the source; the *musical figure* each generator produces is **inferred**
-from the FIODEC letters, the ordering of `tnf`/`tne`/`tnd`, and the time constants, and is
-flagged as such throughout.
+read directly from the source. The *musical figure* each letter denotes was originally
+inferred, but is now sourced from Peter Samson's embellishment figure
+([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7 /
+[*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 7, Fig. 11): `d` short mordent,
+`m` trill (without suffix), `n` trill with suffix, `u` turn, `w` trill (later composers),
+`p` praller. Only the note-by-note ordering *inside* each generator is read from the source.
 
 Core PDP-1 op semantics (`lac`, `dac`, `add`, `sub`, `idx`, `ral`/`sar`, the skip group,
 ones-complement) are not re-taught here — see
@@ -88,9 +91,12 @@ embellishment letter ⇒ no figure**.
 not part of a triplet) the embellishment is legal and we proceed to `s71`. Otherwise we
 fall into `s72`, which issues `complaint flexo etr` — a non-fatal complaint that expands to
 `lac (flexo etr; jda er` (the `flexo` pseudo-op packs the three FIODEC characters `e t r`
-into one literal word; the `er` routine then types it — **not emulator-verified**, and
-`flexo` is one of the original pseudo-ops the modern macro1 lacks). The three-letter code
-`etr` evidently reads *"embellishment in triplet"* — inferred. (Note: `etr` is *also*,
+into one literal word; the `er` routine then types it — Flexowriter typing **not
+emulator-verified**, and `flexo` is one of the original pseudo-ops the modern macro1 lacks).
+The three-letter code `etr` is **"embellishment in triplet"** (embellishment ignored), per
+Samson's error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11); the
+spec confirms "Embellishments may not be called for on triplet notes"
+([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7). (Note: `etr` is *also*,
 coincidentally, an unrelated label inside the `err` typing routine at line 606; that label
 has nothing to do with this complaint — `flexo` consumes "etr" as literal text, not as a
 symbol reference.) After the complaint, `goto s70` falls back to the plain note. The intent:
@@ -131,10 +137,12 @@ see `ebl` below — yielding the *number of time units the fast figure consumes*
 the note is long enough to hold the whole embellishment.
 
 If `ex < 0` we fall into `s79`: `complaint flexo eit` (`lac (flexo eit; jda er`, typing the
-FIODEC code `eit` — **not emulator-verified**), evidently *"embellishment — insufficient
-time"* (inferred). The figure won't fit, so the program complains and `goto s70` to emit
-the note plain. This is the central feasibility test: a trill on a sixteenth note is
-rejected here.
+FIODEC code `eit` — Flexowriter typing **not emulator-verified**), which is **"embellishment
+on illegal time"** (embellishment ignored), per Samson's error table
+([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11) — each ornament has a
+minimum duration below which it cannot be performed ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf),
+p. 7). The figure won't fit, so the program complains and `goto s70` to emit the note plain.
+This is the central feasibility test: a trill on a sixteenth note is rejected here.
 
 ## `s73` — neighbor tones `tnf` (above) and `tnd` (below), then dispatch (lines 1007-1030)
 
@@ -175,9 +183,12 @@ these step by **scale degree** (`ton ± 1` indexing the momentary-tone table `mt
 semitone — so the neighbor is the correct diatonic/keyed pitch, the musically right behavior
 for an ornament. (Inferred from the `mt` indexing.)
 
-The four `s39` exits are the **"embellishment out of range"** guards: any neighbor that
-falls outside `2..76` jumps to `s39` (`complaint flexo eor`, line 1116) and abandons the
-figure. A trill on the top or bottom note of the table is rejected here.
+The four `s39` exits are the **"embellishment out of range"** (`eor`) guards: any neighbor
+that falls outside `2..76` jumps to `s39` (`complaint flexo eor`, line 1116) and abandons the
+figure. This is the spec's "An embellishment will be illegal if any note it generates is out
+of range" ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7;
+`eor` defined in [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11). A trill on
+the top or bottom note of the table is rejected here.
 
 Finally `dispatch ebd-1` (= `add (ebd-1; dap .+1; jmp i`) is a **computed jump** through the
 **generator dispatch table** `ebd`, 1-origin on `ete`. This selects one of `s81`..`s86`.
@@ -189,20 +200,28 @@ These three parallel tables, all indexed `ete-1`, are the heart of the embellish
 The FIODEC letters in the `ebl` comments (`d m n u w p`) are the embellishment command
 letters; their lengths are the time the fast figure consumes.
 
-| `ete` | letter (comment) | `ebl` length (octal) | `ebd` (phase-1 gen) | `ebe` (phase-2 gen) | inferred figure |
-|------:|:---------------:|:--------------------:|:-------------------:|:-------------------:|:----------------|
-| 1 | `d` | `6`  | `s81` | `s32` | trill-type, two-tone start |
-| 2 | `m` | `4`  | `s82` | `s32` | mordent (single quick neighbor) |
-| 3 | `n` | `10` | `s83` | `s93` | longer trill with terminating turn |
-| 4 | `u` | `10` | `s84` | `s32` | turn (upper-principal-lower) |
-| 5 | `w` | `4`  | `s85` | `s95` | short trill + terminating note |
-| 6 | `p` | `5`  | `s86` | `s32` | three-note (upper) figure |
+| `ete` | letter | ornament (per spec) | `ebl` length (octal) | `ebd` (phase-1 gen) | `ebe` (phase-2 gen) | code shape (read from source) |
+|------:|:------:|:-------------------|:--------------------:|:-------------------:|:-------------------:|:----------------|
+| 1 | `d` | short mordent | `6`  | `s81` | `s32` | principal + lower neighbor |
+| 2 | `m` | trill (without suffix) | `4`  | `s82` | `s32` | trill loop, no tail withheld |
+| 3 | `n` | trill with suffix | `10` | `s83` | `s93` | trill loop + closing turn |
+| 4 | `u` | turn | `10` | `s84` | `s32` | upper-principal-lower |
+| 5 | `w` | trill (later composers) | `4`  | `s85` | `s95` | trill loop + one closing note |
+| 6 | `p` | praller (pralltriller) | `5`  | `s86` | `s32` | three-note (upper) flick |
 
-The letter→figure mapping is **inferred**: the source gives only the one-letter `ebl`
-comments and the generator code. `ebe` is the **second-phase dispatch** (line 1186) that
-runs *after* the trill loop exhausts its time — most entries are `s32` ("nothing more"),
-but `n` and `w` route to `s93`/`s95` to append a closing figure (a *turned* trill, i.e. a
-trill that resolves with a two- or one-note tail). See "What this accomplishes."
+The letter→ornament mapping is **no longer inferred**: it is given authoritatively in Peter
+Samson's embellishment figure ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7
+/ [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 7, Fig. 11), whose symbols are
+those C. P. E. Bach used in his *Essay on the True Art of Playing Keyboard Instruments*. The
+"code shape" column is read from the generator bodies and corroborates the names (e.g. `u` =
+*turn* really does emit upper-principal-lower; `n` = *trill with suffix* really does append a
+closing turn). The spec also fixes the rules the code enforces: an embellishment is illegal on
+a triplet note (`etr`), illegal if it would not fit the note's minimum duration (`eit`), and
+illegal if any generated note is out of range (`eor`); only the last embellishment in a note is
+taken (`tme`); and a comma does not copy embellishments. `ebe` is the **second-phase dispatch**
+(line 1186) that runs *after* the trill loop exhausts its time — most entries are `s32`
+("nothing more"), but `n` and `w` route to `s93`/`s95` to append the closing figure the
+reserved `cut` time was held back for (`n`'s "suffix" turn, `w`'s single tail note).
 
 ## The per-type generators `s81`-`s86` (lines 1032-1084)
 
@@ -223,7 +242,7 @@ The exact meaning of bit `400000` belongs to the consumed note-word layout in
 articulation/triplet field); here it is simply OR-ed in by adding it to the pre-shifted
 tone (the pitch field never sets that bit, so `addi` acts as a bit-set). Inferred.
 
-### `s81` — letter `d` trill start (lines 1032-1038)
+### `s81` — letter `d`, short mordent (lines 1032-1038)
 
 ```
 s81,	load (2; addi tne; call cn     / principal, 2 units
@@ -232,10 +251,10 @@ s81,	load (2; addi tne; call cn     / principal, 2 units
 ```
 
 Two fast notes — principal (`tne`) then lower neighbor (`tnd`) — then straight to `s75`
-(emit the sustained remainder). With `ebl=6` for `d` this is the opening of a short trill
-figure. (Figure inferred.)
+(emit the sustained remainder). This two-note principal→lower figure is the **short mordent**
+the spec assigns to `d` ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7, Fig. 11).
 
-### `s82` — letter `m` mordent (lines 1040-1041)
+### `s82` — letter `m`, trill without suffix (lines 1040-1041)
 
 ```
 s82,	zero cut
@@ -243,10 +262,12 @@ s82,	zero cut
 ```
 
 `m` clears `cut` (the *time not available to the trill loop*, see below) and joins the
-**trill loop** at `s76`. With `cut = 0` the loop runs across the whole `nft` budget — a
-mordent here is realized as the degenerate/short case of the trill loop. (Inferred.)
+**trill loop** at `s76`. With `cut = 0` the loop runs across the whole `nft` budget, with no
+tail withheld — this is the plain **trill (without suffix)** the spec assigns to `m`
+([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7, Fig. 11). (`n` is the same
+trill loop but reserves a 4-unit tail for a closing turn — the "with suffix" version.)
 
-### `s83` — letter `n` long trill, and the trill loop `s76`/`s77` (lines 1043-1057)
+### `s83` — letter `n`, trill with suffix, and the trill loop `s76`/`s77` (lines 1043-1057)
 
 ```
 s83,	sett cut, 4        / cut := 4  (withhold 4 units for the closing turn)
@@ -293,10 +314,11 @@ s84,	load (400002; addi tnf; call cn   / upper neighbor, flag+2 units
 ```
 
 Three notes — **upper, principal, lower** — each with the `400002` constant (articulation
-bit set, 2 units), then `goto s75`. Upper-principal-lower is the classic *turn* shape, and
-the set flag bit evidently slurs the three together. (Figure inferred.)
+bit set, 2 units), then `goto s75`. Upper-principal-lower is the classic *turn* shape, which
+is exactly the ornament the spec assigns to `u` ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf),
+p. 7, Fig. 11); the set flag bit (`400000` = legato) slurs the three together.
 
-### `s85` — letter `w` short trill (lines 1071-1074)
+### `s85` — letter `w`, trill (later composers) (lines 1071-1074)
 
 ```
 s85,	load (2; addi tne; call cn        / principal, 2 units
@@ -305,9 +327,10 @@ s85,	load (2; addi tne; call cn        / principal, 2 units
 
 `w` emits one principal note then jumps into `s83` — i.e. it borrows the full `n` trill loop
 (which sets `cut := 4` and reserves the tail). Its `ebe` entry is `s95` (a single closing
-note), making `w` a *short trill that resolves with one terminating note*. (Inferred.)
+note), so `w` is a trill that resolves with one terminating note — the spec's **trill (later
+composers)** variant ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7, Fig. 11).
 
-### `s86` — letter `p` three-note figure (lines 1076-1084)
+### `s86` — letter `p`, praller (pralltriller) (lines 1076-1084)
 
 ```
 s86,	load (1; addi tnf; call cn        / upper neighbor, 1 unit
@@ -317,8 +340,9 @@ s86,	load (1; addi tnf; call cn        / upper neighbor, 1 unit
 ```
 
 Three *fastest* (1-unit) notes — upper, principal, upper — falling through into `s75`. With
-`ebl=5` this is a quick three-note ornament (an inverted-mordent-like flick). (Figure
-inferred.) Note `s86` does **not** `goto s75`; the last `call cn` (line 1084) is followed by
+`ebl=5` this is a quick three-note ornament — the **praller** (pralltriller) the spec assigns
+to `p` ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7, Fig. 11). Note `s86`
+does **not** `goto s75`; the last `call cn` (line 1084) is followed by
 a blank line 1085 and then `s75` at 1086, so it relies on falling through — a deliberate
 fall-through.
 
@@ -430,10 +454,13 @@ embellishment letter `ete`, it:
 
 The net effect: **one DSL note becomes several note words in `not[]`**, so the downstream
 *PDP-1 Music 13* program (consumer of [`05-data-formats.md`](../../pdp1m13/docs/05-data-formats.md))
-plays a fully written-out ornament with no ornament logic of its own. The precise *musical*
-identity of each figure (which letter is a trill vs. mordent vs. turn) is inferred from the
-`ebl` letters, the `tnf`/`tne`/`tnd` ordering, and the time constants — treat those readings
-as "appears to / evidently," not certainties.
+plays a fully written-out ornament with no ornament logic of its own. The musical identity of
+each letter — `d` short mordent, `m` trill (without suffix), `n` trill with suffix, `u` turn,
+`w` trill (later composers), `p` praller — is **established by Samson's embellishment figure**
+([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7 /
+[*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 7, Fig. 11) and matches the code
+shapes above; only the exact note-by-note ordering inside each generator is read from the
+source rather than the spec.
 
 Next: the common note-finishing path **`s32`/`s33`** and the terminator/bar handler **`te`**
 (lines 1130-1219) — where every note, plain or embellished, accounts its time into the

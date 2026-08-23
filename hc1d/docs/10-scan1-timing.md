@@ -41,7 +41,7 @@ s1g,	load cm
 
 `s1f` and `s1g` do the same for `g` (complaint `tmg`, "too many g") and `cm` (complaint `tmc`, "too many commas"). After this block, each of `r`, `g`, `cm` is `0` or `1`.
 
-> *Inferred musical roles (resolved downstream in Scan 2):* `r` appears to be the **rest** token (`s1k` below reaches back and edits the previous note when `r != 0`; the pseudo-name `pnb`="rest" uses the same letter), `g` a **grace** token (`rt==1` forces a tiny fixed `tim` at `s1l`), and `,` separates the two numbers of a duration spec. The exact articulation roles are pinned down in Scan 2, not here.
+> *Musical roles (now confirmed by the spec, [*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf)):* `r` is the **rest** token — "a rest may be expressed by the letter `r` and a duration number" (p. 2 §I.B.2); `g` is the **grace note** marker — "the letter `g` … marks it as a grace note … if a time is not specified, a thirty-second note will be compiled" (p. 7 §I.B.8), which is why `rt==1` forces a small fixed `tim` at `s1l`; and `,` is the **copy-previous-note** comma — "a comma … to copy the previous note exactly … [or, with `r`/a pitch number] copy only the duration from the previous note" (p. 2 §I.B.3). The three "too many" caps `tmr`/`tmg`/`tmc` below are the spec's "one `r`/`g`/comma per note" rules. The clamps to ≤1 and the codes are the error table's `tmr`/`tmg`/`tmc` ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11).
 
 ---
 
@@ -154,7 +154,7 @@ s1n,	sett tim, 100
 
 - `test0 rt, s1n` = `lac rt; sza i; jmp s1n` -- if `rt == 0` (right side is a plain number) jump to `s1n`, the normal numeric-duration path.
 - Otherwise (`rt` is `1` or `2`, a `g` or comma on the right): AC currently holds `rt`. `tgrec 1, s1m` = `sub (1`; `sma+sza-skp`; `jmp s1m` -- jump to `s1m` if `rt - 1 > 0`, i.e. **`rt == 2`** (comma). For `rt == 1` (`g`) fall through to `sett tim, 2` (`tim := 2`) and `goto s1o`.
-  - `s1m, testm tim, s1w` = `lac tim; spa; jmp s1w` -- if the *current* `tim` is **minus**, route to `s1w` (`error flexo unc`, "unclassifiable", inferred -- red ribbon, then `goto te`); otherwise `goto s1o` keeping the existing `tim`. (This branch handles a comma-terminated note that inherits the time already set up rather than recomputing it.)
+  - `s1m, testm tim, s1w` = `lac tim; spa; jmp s1w` -- if the *current* `tim` is **minus**, route to `s1w` (`error flexo unc` — **`unc` = "unprepared comma (no note before it) → note ignored"** per Samson's error table, [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11 — red ribbon, then `goto te`); otherwise `goto s1o` keeping the existing `tim`. (This branch handles a comma-terminated note: a comma copies the previous note's duration, so a comma with no valid prior time `tim` is an "unprepared comma".)
 
 `s1n` is the **normal triplet/fraction setup**:
 
@@ -196,7 +196,7 @@ The loop assumes `t1` (the denominator) is a **power of two**: each iteration bo
 
 - `s1p, testnl n2, t2, s1v` = `lac n2; sas t2; jmp s1v` -- `sas` skips iff `AC == C(t2)`; the macro therefore jumps when **`n2 != t2`**. If the reconstructed power of two `t2` does not equal the original `n2`, the denominator was not a power of two -> error `s1v` (`ert`, red ribbon, `goto te`).
 - `test1 fu, s1o` = `lac fu; sza; jmp s1o` -- if `fu != 0` (the fraction scale did not underflow to zero during the halving), the result is valid: `goto s1o`.
-- Otherwise fall through to `complaint flexo dtu` = `lac (flexo dtu; jda er` -- the **"divisor too unwieldy"** complaint (inferred from `dtu`): the requested subdivision was finer than the `fc`/`fu` fraction machinery can represent (the halving drove `fu` to `0`). This is a complaint (`er`, black ribbon, returns), so after typing it the routine continues into `s1o` with whatever `tim` survived.
+- Otherwise fall through to `complaint flexo dtu` = `lac (flexo dtu; jda er` -- the **`dtu` = "dot underflow → time truncated to 64th"** complaint (Samson's error table, [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11): a dot/`x` requested a subdivision finer than a 64th note (the halving drove `fu` to `0`), matching the spec's "A dot whose duration is less than that of a sixty-fourth note is ignored" ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 3 §I.B.4.a). This is a complaint (`er`, black ribbon, returns), so after typing it the routine continues into `s1o` with whatever `tim` survived.
 
 > *One's-complement note:* the `sar 1s` halving is sign-preserving, so a `-0` (`777777`) input would stay negative; the `n2 > 0` and `n2 <= 100` guards in `s1n` keep `t1` a small positive value, and `double t2` starting from `1` stays positive, so the loop terminates with `t1` reaching `+0`.
 
@@ -225,7 +225,7 @@ s1o,	load tim
 
 `s1e`-`s1o` is Scan 1's **timing engine**. Given the per-word tallies the front half collected (`ucd`, `n1`/`n2`, `g`/`r`/`cm`, `fc`/`fu`), it:
 
-1. Clamps the embellishment/comma counts to legal ranges with recoverable **complaints** (`tmr`/`tmg`/`tmc`, typed in black, then continue inline) and abandons malformed words with **errors** (`tmf`/`tff`/`unc`/`ert`, typed in red, then `goto te`). Neither path halts the machine.
+1. Clamps the rest/grace/comma counts to legal ranges with recoverable **complaints** (`tmr` "too many r"s, `tmg` "too many g"s, `tmc` "more than one comma", each → forced to 1, typed in black, then continue inline) and abandons malformed words with **errors** (`tmf` "too many fields", `tff` "too few fields", `unc` "unprepared comma", `ert` "erroneous time", each → note ignored, typed in red, then `goto te`). All meanings are Samson's error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11). Neither path halts the machine.
 2. Derives the right/left position indicators `rt`/`lt` (number vs. `g` vs. comma) that tell Scan 2 how to read the note.
 3. Handles a **rest** by reaching back and forcing the *previous* `not` word's articulation index to legato (`cla`) -- clearing articulation bits `{1,3,4}` and setting bit 0 -- so the prior note sounds through the rest ([05 §2](../../pdp1m13/docs/05-data-formats.md#2-the-per-voice-note-word)).
 4. Computes the note's **duration** by dividing the `100`/64th base by the (power-of-two) denominator `n2` in the `s1q` halving loop, composing in the `.`/`x` fraction halves, guarding against non-power-of-two denominators (`ert`) and over-fine subdivisions (`dtu`), and depositing the result in `fc`.
@@ -234,4 +234,4 @@ The duration in `fc` and the fraction scale in `fu` are exactly the values Scan 
 
 Continue to **Scan 2 (`s2`)** at line 832, where the tone, articulation and this duration are assembled into the actual `not` note word.
 
-*(I/O specifics of `tyo`/`jda er`/`flexo` literal packing are not emulator-verified; the FIODEC mnemonics `tmr`/`tmg`/`tmc`/`dtu` and the musical interpretation of `tim`/`fc`/`rt`/`lt` are inferred from in-source comments and the resulting note-word layout, as flagged inline.)*
+*(I/O specifics of `tyo`/`jda er`/`flexo` literal packing remain not emulator-verified. The error-code *meanings* (`tmr`/`tmg`/`tmc`/`dtu`/`tmf`/`tff`/`unc`/`ert`) are now sourced from Samson's error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11); the musical interpretation of `tim`/`fc`/`rt`/`lt` and the duration ladder are confirmed by the language spec ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), §I.B), with the bit arithmetic exact as flagged inline.)*

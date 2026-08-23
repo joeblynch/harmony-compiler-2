@@ -27,7 +27,7 @@ Codes with no `/`-comment anywhere in the source are marked **inferred** (consis
 | Octal | Char / function | Source / note |
 |---|---|---|
 | `00` | space | `s2z` (line 1165, `/ space`); typed blank by `ets` (`type (0`, line 605) |
-| `21` | `\|` vertical bar = **measure separator** | `s2z` (line 1164, `// \|`); the program's most-tested literal (`trnl (21`, `trel (21`) |
+| `21` | `/` slash = **measure bar** (and title terminator) | `s2z` (line 1164, `// \|`); the program's most-tested literal (`trnl (21`, `trel (21`). Per the spec the bar the copyist types is the **slash `/`** ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), pp. 1, 8), confirmed by the title reader `pg` (line 420) reading until `21`. Earlier drafts rendered this `\|`; the `// \|` source comment is Samson marking the slash as a bar-line |
 | `22` | `s` | `s2z` 1147 (`/s`); `pn1 = 22` (`"s"`) |
 | `23` | `t` | not in `s2z`; pinned by `pn6/pn7/pnb/pnh` (e.g. `pn7 = 23 65 45 46 51` = `"tenor"`) |
 | `24` | `u` | `s2z` 1160 (`/u`); `pn9 = 24 …` (`"units"`) |
@@ -71,7 +71,7 @@ Non-character mask literals that appear alongside FIODEC in the I/O code:
 | `(700` | punch/feed **status mask** — `and (700; sad (700` waits for the punch ready in `fee` (lines 381–382) and `ppp` (393–394) **(not emulator-verified)** |
 | `(36` | error-prefix marker (see chart) |
 | `(34` / `(35` | black / red ribbon shift (see §2) |
-| `(13` | reader sentinel in `rp` (`sad (13`, line 369) — evidently a tape control code that triggers a re-read (`jmp rt2`); glyph **inferred** |
+| `(13` | reader sentinel in `rp` (`sad (13`, line 369) — the FIO-DEC **"stop code"**, octal 13, written `@` in ASCII; it is a page-break / end-of-tape mark that **separates the voices** on a multi-voice tape ([*music-workflow.pdf*](../prs-docs/music-workflow.pdf), step 3). `rp` treats it as a tape control code triggering a re-read (`jmp rt2`) |
 | `(117777` | field mask used outside the text path (`band (117777`, line 792) — listed only to disambiguate it from a FIODEC code; **not** a character |
 | `(400000` | sign bit / `−0`-related literal (`addi (400000`, line 793) — not a character |
 

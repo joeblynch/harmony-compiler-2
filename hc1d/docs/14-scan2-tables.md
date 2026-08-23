@@ -69,6 +69,8 @@ The role of each code is the action of its paired `s2y` handler (next subsection
 | 19 | 50 | `q` | `2sr`: set sle value `sv := 20000` (inferred) |
 | 20 | 70 | `h` | `2ss`: set sle value `sv := 40000` (inferred) |
 
+> **The glyph *meanings* are authoritative (the `(inferred)` tags concern only the bit values).** Every character here is a recognized token of the Harmony Compiler's input language, defined by Peter Samson in [*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf) / [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf): the **articulation** letters `s` (staccato), `l` (legato), `e` (eighth/default), `h` (half), `q` (quarter) (p. 6); the **accidentals** `(` = sharp, `)` = natural, `-` = flat, with `((`/`--` for double sharp/flat (p. 5); the octave-relocation letters `a` (one staff above) / `b` (one staff below) (pp. 4–5); the **triplet** letter `c` (p. 4); the **dot** `.` and `x` ("halve the value of the dot") (p. 3); and the **embellishment** letters `d m n u w p` (p. 7, see `ebl` below). What remains code-derived ("inferred") is only the *bit pattern* each articulation letter writes into `sv`, which the consumer side confirms maps to articulation classes `{l=8, e=0, h=2, q=1, s=4}` ([`05-data-formats.md`](../../pdp1m13/docs/05-data-formats.md) §2, and [*music_intermediate_format.pdf*](../prs-docs/music_intermediate_format.pdf)).
+
 That is 21 entries — exactly `25` octal. The label `s2z+25,` at line 1169 (where `25` is octal `= 21` decimal) sits on the word immediately after the 21st entry, asserting the table's length; it creates **no gap**. The `search` count is likewise `25` octal (`search s2z, 25, s20`), so the linear scan covers exactly these 21 entries. *(There is no "25-versus-21" mismatch: in this all-octal assembler `25` is `21`.)*
 
 ### How `s2z` is consumed — `search s2z, 25, s20` (line 848)
@@ -166,16 +168,16 @@ ebl,	6	/d
 	5	/p
 ```
 
-| Selector value (in `ete`) | Embellishment letter | Length (octal units) |
-|---:|---|---:|
-| 1 | `d` | 6 |
-| 2 | `m` | 4 |
-| 3 | `n` | 10 |
-| 4 | `u` | 10 |
-| 5 | `w` | 4 |
-| 6 | `p` | 5 |
+| Selector value (in `ete`) | Embellishment letter | Length (octal units) | Ornament (per spec) |
+|---:|---|---:|---|
+| 1 | `d` | 6 | short mordent |
+| 2 | `m` | 4 | trill (without suffix) |
+| 3 | `n` | 10 | trill with suffix |
+| 4 | `u` | 10 | turn |
+| 5 | `w` | 4 | trill (later composers) |
+| 6 | `p` | 5 | praller (pralltriller) |
 
-(`ebl+6,` at line 1182 asserts the table has 6 entries.) *(The note-by-note musical meaning of each embellishment is inferred from the handler bodies; the source gives only the letter comments.)*
+(`ebl+6,` at line 1182 asserts the table has 6 entries.) The ornament names come from Peter Samson's embellishment figure ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 7 / [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 7, Fig. 11) — they are authoritative, not inferred; only the note-by-note construction in the `s8x` handlers is read from the source. See [`13-scan2-embellishments.md`](13-scan2-embellishments.md) for the per-letter figures.
 
 ### How `ebl` is consumed — `lookup ebl-1` (line 997)
 

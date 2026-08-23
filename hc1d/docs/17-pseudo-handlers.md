@@ -35,7 +35,7 @@ pc9,	load tht          / lac tht — 1-based index of the matched pseudo
 | 16 | png | `q` | pvg |
 | 17 | pnh | `tempo` | pvh |
 
-The FIODEC name strings decode cleanly against the `s2z`/`pn*` comments (e.g. `pn5,` = `62 61 22 22` = `b a s s`; `pnh,` = `23 65 44 47 46` = `t e m p o`). The *musical meanings* (`s`/`l`/`e`/`h`/`q` as articulation classes; the staff names; `units`/`tempo` etc.) are inferred from the keyword strings and the state each handler sets; treat them as *evidently* rather than certain where noted.
+The FIODEC name strings decode cleanly against the `s2z`/`pn*` comments (e.g. `pn5,` = `62 61 22 22` = `b a s s`; `pnh,` = `23 65 44 47 46` = `t e m p o`). The *musical meanings* are no longer inferred: every one of these keywords is a documented command in Samson's spec §I.D "Commands to the Compiler" ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), pp. 8–10) — `s`/`l`/`e`/`h`/`q` are the articulation classes (§I.B.6, §I.D.5), `bass`/`treble`/`tenor`/`alto` the four clefs (§I.D.3), `units` the measure length (§I.D.2), `key` the key signature (§I.D.4), `rest` whole-measure rests (§I.D.6), `copy` measure repetition (§I.D.7), `up`/`down` transposition (§I.D.8), `tempo` the tempo (§I.D.9), `end` end-of-part (§I.D.1).
 
 ## `ps`/`psw` — the deferred-argument return switch (line 1273)
 
@@ -83,17 +83,17 @@ pvg,	sett ss, 20000    /q
 
 `sett ss, V` expands to `lac (V ; dac ss` — load the **literal** `V` and store it into `ss`. `zero ss` is `dzm ss`. Each of these sets the **running `sle`-status indicator `ss`** (line 1506, `/s2: running status of sle indicator`) to a distinct high-bit pattern, then exits via `psr`. None reads a number (`ao` stays 0).
 
-These five keywords (`s`, `l`, `e`, `h`, `q`) select an articulation / `sle` mode for subsequent notes; the value in `ss` is later copied per-note into `sv` (line 1507, `/s2: value of ss for particular note`) and folded into the note's compiled word in Scan-2. The exact musical mapping is inferred from the keyword letters and the bit positions:
+These five keywords (`s`, `l`, `e`, `h`, `q`) select an articulation mode for subsequent notes; the value in `ss` is later copied per-note into `sv` (line 1507, `/s2: value of ss for particular note`) and folded into the note's compiled word in Scan-2. The musical mapping is **specified by Peter Samson** ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 6 §I.B.6 and p. 9 §I.D.5) — these single letters are exactly the articulation classes, used either as per-note markers or, here, as mode-setting commands:
 
-| handler | keyword | `ss` value (octal) |
-|---|---|---|
-| pv1 | `s` | 200000 |
-| pv2 | `l` | 400000 |
-| pv3 | `e` | 0 |
-| pvf | `h` | 40000 |
-| pvg | `q` | 20000 |
+| handler | keyword | `ss` value (octal) | articulation (per spec) | sounded / silent |
+|---|---|---|---|---|
+| pv1 | `s` | 200000 | staccato (value 4) | ≈3/8 / ≈5/8 |
+| pv2 | `l` | 400000 | legato (value 8) | full / 0 |
+| pv3 | `e` | 0 | eighth — the **default mode** (value 0) | 7/8 / 1/8 |
+| pvf | `h` | 40000 | half (value 2) | 1/2 / 1/2 |
+| pvg | `q` | 20000 | quarter (value 1) | 3/4 / 1/4 |
 
-`s`/`l`/`e` appear to select articulation classes (`e` clears the field, evidently a default/"even" mode); `h`/`q` set lower-order bits, plausibly additional duration/articulation qualifiers. All of this is inferred — the in-source comments name only the letters, not their musical semantics. The handler's only certain contract is "deposit this constant in `ss`."
+So `e` is the default ("at the beginning of each line of music the Compiler is in the `e` mode," [*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 9), and each `ss` value equals the letter's intermediate-format articulation code (`l`=8, `s`=4, `h`=2, `q`=1, `e`=0; [*music_intermediate_format.pdf*](../prs-docs/music_intermediate_format.pdf)), which the player's `cxt` table turns back into the sounded/silent split shown ([`../../pdp1m13/docs/05-data-formats.md`](../../pdp1m13/docs/05-data-formats.md)). See [`21-input-dsl.md`](21-input-dsl.md) §2 for the full table.
 
 ## Staff (clef/voice) setters: `pv5`/`pv6`/`pv7`/`pv8` (lines 1286-1293)
 
@@ -146,7 +146,7 @@ p9a,	load n1       / lac n1
 
 Finally `sett irl, -1` resets **`irl` = "is rest location?"** (line 1550, `/pvb: is rest location?`) to −1 (no pending rest note). `irl` is also initialized to −1 at program reset (`pfr`, line 433). Falling into `psr` clears `ao` and returns to `te`.
 
-**State effect:** `units N` establishes the rhythmic granularity for everything that follows — one "unit" is the atomic note-duration tick, and `1u`/`3u` are the precomputed multiples the note former uses to accumulate measure time (`mm`) and per-note time (`tu`).
+**State effect:** `units N` establishes the rhythmic granularity for everything that follows. Per the spec, the argument is **the number of thirty-second notes in a measure** — "computed by multiplying the time signature (as a fraction) by 32" — and it takes effect immediately for this and all following measures until the next `units` ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 8 §I.D.2). `1u`/`3u` are the precomputed multiples the note former uses to accumulate measure time (`mm`) and per-note time (`tu`); a measure whose summed durations miss `3u` raises `mtl`/`mts` ("measure too long/short").
 
 ## `pvh` — `tempo` (lines 1344-1350): emit the tempo control word
 
@@ -175,7 +175,7 @@ cn,	answer cnx
 cnx,	exit cn
 ```
 
-So the `700000`-tagged value is written into the next slot of the note-word array `not`. The **player** *PDP-1 Music 13* recognizes this tag when it later reads the tape: a note word whose **top three bits are `700000`** is decoded as a **tempo directive**, and the player masks it to its **low 15 bits** (`& 77777`) for the tempo value — see [pdp1m13 data formats](../../pdp1m13/docs/05-data-formats.md), which documents `(700000)` as the tempo tag and `(77777)` as the tempo-value mask on the consumer side. This is exactly the producer side of that agreement: hc1d punches the control word; the player consumes it. `pha` exits via `psr`.
+So the `700000`-tagged value is written into the next slot of the note-word array `not`. This is the spec's **"Tempo word = `700000` octal + Tempo value"** ([*music_intermediate_format.pdf*](../prs-docs/music_intermediate_format.pdf)). The copyist-facing number is computed as `n = 1126/(m·r)` (Maelzel metronome count `m`, counted note value `r`), must not exceed 682, defaults to **170** (= `252` octal) if no `tempo` is given, and applies to all voices once stated in any one ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 10 §I.D.9); smaller is faster. The **player** *PDP-1 Music 13* recognizes the tag when it later reads the tape: a note word whose **top three bits are `700000`** is decoded as a tempo directive, masked to its **low 15 bits** (`& 77777`) — see [pdp1m13 data formats](../../pdp1m13/docs/05-data-formats.md), documenting `(700000)` and `(77777)` on the consumer side. This is exactly the producer side of that agreement. `pha` exits via `psr`.
 
 ## `pvb` — `rest` (lines 1401-1425): emit a rest note and bar pointers
 
@@ -226,7 +226,7 @@ pb3,	call sbc          / jda sbc — allocate a BAR-pointer slot, AC := compleme
 
 `pb3` loops `n1` times. Each pass calls `sbc` (the bar-location allocator, lines 456-463: bumps `tbc`/`bc`, checks capacity `all`, and returns `bc` **complemented**, since bars are stored at negative offsets below `bar`=7750) and `putback bar, irl` stores the rest-note index `irl` into the new bar slot — i.e. **every measure of the rest reuses the same rest note word**, pointing each bar at it. `istepa n1, 1` subtracts 1 from `n1` (`istepa J,I` = `law i I ; add J ; dac J`; `law i 1` loads −1, so this adds −1), and `trnz pb3` (`sza ; jmp pb3`) repeats while nonzero. When `n1` reaches 0, `goto psr` returns.
 
-**State effect:** `rest N` lays one rest note in `not` and pushes `N` bar-pointers (all aimed at that one note) into `bar`, advancing the bar count. The single-invocation loop materializes exactly one note word, shared across all `N` bars — the tape's bar table just repeats the pointer.
+**State effect:** `rest N` lays one rest note in `not` and pushes `N` bar-pointers (all aimed at that one note) into `bar`, advancing the bar count. Per the spec, `rest` is the **whole-measure** rest: "`rest` followed by the number of inactive measures … they will all be given the current measure length"; it is distinct from the note-level rest `r`, may not appear once notes are already written in a measure (the `ilr` = "illegally located rest → rest ignored" guarded by `test0 mm` above; [*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 9 §I.D.6, code in [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11), and is not followed by a slash. The single-invocation loop materializes exactly one note word, shared across all `N` bars — the tape's bar table just repeats the pointer.
 
 ## `pvd` / `pve` — `up` / `down` (lines 1427-1441): transposition
 
@@ -238,7 +238,7 @@ pd1,	move n1, tll      / lac n1; dac tll
 	goto psr
 ```
 
-`up N` is the simplest deferred handler: read the number, `move n1, tll` (`lac n1 ; dac tll`) stores it into **`tll` = "transposition semitone count"** (line 1546, `/pvd, pve: transposition semitone count`), and exit. A positive `tll` shifts subsequent notes up by `n1` semitones (inferred from the variable's ownership comment).
+`up N` is the simplest deferred handler: read the number, `move n1, tll` (`lac n1 ; dac tll`) stores it into **`tll` = "transposition semitone count"** (line 1546, `/pvd, pve: transposition semitone count`), and exit. The spec confirms: `up`/`down` take "a number … to indicate the number of semitones that the compiled music will be above or below the music as written," effective immediately, restored with `up 0`/`down 0`; the tape starts at 0 transposition ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 10 §I.D.8). So a positive `tll` shifts subsequent notes up by `n1` semitones.
 
 ```
 pve,	sett ao, 1        /down
@@ -315,7 +315,7 @@ co8,	load cbh          / lac cbh
 
 The copy loop walks source bars. For each, `load cbh ; complement` forms the *complemented* index (bar slots are addressed in ones-complement here, matching how `sbc` returns negated indices at lines 461-463), `lookup bar` (`add (bar ; dap .+1 ; lac`) fetches that bar's stored note-pointer into `t4`, `call sbc` carves a new bar slot at the write head, and `putback bar, t4` deposits the copied pointer there. `step1 cbh` (`idx cbh`) advances, and `tles n1, co8` (`sub n1 ; spa ; jmp co8`) repeats while `cbh < n1`. The leading `istepa cbh, 1` at `co7` pre-adjusts the start before the top-of-loop `load cbh`; the exact inclusive/exclusive endpoints of the copied range follow from this pre-adjust and the `step1`-then-test ordering (the precise span is inferred from the loop structure). Exit via `psr`.
 
-**State effect:** `copy A B` appends, after the current music, fresh bar-pointer entries that *reference the same note words* as the requested prior bars — so a repeated phrase is encoded once in `not` and re-pointed in `bar`, exactly mirroring how the player will replay those note words again when it walks the bar table.
+**State effect:** `copy A B` appends, after the current music, fresh bar-pointer entries that *reference the same note words* as the requested prior bars — so a repeated phrase is encoded once in `not` and re-pointed in `bar`, exactly mirroring how the player will replay those note words again when it walks the bar table. Per the spec, `copy` is followed by two numbers, the first and last measures to copy; the first must be below the present measure number (`blc` = "bad left argument to copy → copy ignored"), the second not below the first (`brc` = "bad right argument to copy → copy ignored"), and it may not be used once notes are in the current measure (`ilc` = "illegally located copy → ignored"); copies are verbatim but play at the current tempo ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), p. 10 §I.D.7; codes in [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11).
 
 ## Cross-references: `end` (`pv4`) and `key` (`pva`)
 

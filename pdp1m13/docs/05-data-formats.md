@@ -14,7 +14,9 @@ This is the most reference-heavy part of the program, so each format is given wi
 
 This tape is *Music 13*'s input, not its output: it is produced by the separate **Harmony Compiler**, which compiles a human-authored score (a custom transcription language) down to this note/bar format. *Music 13* reads it and runs a *second* compilation pass (format 3, below).
 
-The tape is read by `rdp` (`1024`), `rdm` (`1056`), and the shared section reader `rdg` (`1114`). A tape holds, **per voice**, two *sections*: a **notes** section and a **bars** section. Each section has the same envelope:
+> **Authoritative source.** This format is specified by Peter Samson in [*music_intermediate_format.pdf*](../../hc1d/prs-docs/music_intermediate_format.pdf) ("PDP-1 Music / Intermediate Tape Format", rev. 2006-05-11), the producer↔consumer seam between the Harmony Compiler and *Music 13*. Per that spec: an **Intermediate Tape = 1 to 4 Parts, separated by blank tape**; a **Part = a Notes section, 5 blank frames of tape, then a Bars section**; a **Notes section = a word count `n`, the `n` Note words, and a checksum** (the "1's-complement sum of Note words"); a **Bars section = a word count `m`, the `m` Bar words, and a checksum**. The bit-level reads below were originally inferred from the rotate/mask sequence in the code; they are now **confirmed against that spec** and cited inline.
+
+The tape is read by `rdp` (`1024`), `rdm` (`1056`), and the shared section reader `rdg` (`1114`). A tape holds, **per voice (= Part)**, two *sections*: a **notes** section and a **bars** section. Each section has the same envelope:
 
 | Order | Tape words | Read by | Meaning |
 |---|---|---|---|
@@ -22,7 +24,7 @@ The tape is read by `rdp` (`1024`), `rdm` (`1056`), and the shared section reade
 | 2 | N words | `rd1`/`rd3` (`rpb`) | the N data words (note words, or bar-pointer words) |
 | 3 | one word | `rd1`/`rd3` tail | **checksum** = arithmetic (`add`) sum of the N data words |
 
-Each word is assembled from paper tape by `rpb` (`rpb` = `730002`, three tape lines into one 18-bit word).
+The checksum is a ones-complement `add` accumulation, which is exactly the spec's "1's-complement sum of … words" ([*music_intermediate_format.pdf*](../../hc1d/prs-docs/music_intermediate_format.pdf)). Each word is assembled from paper tape by `rpb` (`rpb` = `730002`, three tape lines into one 18-bit word).
 
 `rdg` is the section preamble (`jsp rdg`):
 
@@ -77,7 +79,7 @@ rd3:  rpb; dio i ib
       idx ij; stf 5                   / next voice; flag5 = "got some data"
 ```
 
-Key point: a bar pointer on tape is a **relative offset into this voice's note list**; `rdm` converts it to an *absolute* core address by adding `off` (the voice's note base). The checksum is computed over the *raw* (unbiased) pointer, before `+off`. `sma` skips if AC<0, so the `add off` runs only for a **non-negative** pointer — a *negative* bar pointer is left unbiased. That is the encoding for a special/sentinel bar pointer (the compiler later treats the bar-list specially; the exact negative-pointer semantics are not spelled out in a comment, so treat "negative bar pointer = not relocated" as the only certain claim).
+Key point: a bar pointer on tape is a **relative offset into this voice's note list**; `rdm` converts it to an *absolute* core address by adding `off` (the voice's note base). This is exactly the spec's definition — "Bar word = offset from `not` where the measure begins … `600000` octal at end of part" and "A Part in memory is a list of Bar words pointing to Note words" ([*music_intermediate_format.pdf*](../../hc1d/prs-docs/music_intermediate_format.pdf)). The checksum is computed over the *raw* (unbiased) pointer, before `+off`. `sma` skips if AC<0, so the `add off` runs only for a **non-negative** pointer — a *negative* bar pointer is left unbiased. The spec describes only the positive offset list and its `600000` end-of-part marker, so the *negative* bar-pointer case is an implementation detail it does not cover; treat "negative bar pointer = not relocated" as the only certain claim, and as sourced from the code rather than the spec.
 
 `b`, `n`, `t`, `a`, `p` are the four-element per-voice arrays at `750`/`754`/`760`/`764`/`770`. `b(ij)` holds the head of voice `ij`'s bar list; the note words themselves live contiguously in the `not` buffer (`2304`) pointed at by `ib`.
 
@@ -104,7 +106,7 @@ The compiler's note loop is `cc` (`1317`) → `c0t`/`c0n` (`1340`/`1346`) → `c
       idx . (c1n); jmp c0n   / advance the note ptr, fetch the next word
 ```
 
-So a word whose top three bits are exactly `700000` is **not** a note: its low 15 bits (`& 77777`) are a tempo argument fed to `tpo` (`1606`), after which the loop advances and fetches the next word. `sas` skips on equality, so the in-line `jmp c9c` is reached only for words whose top 3 bits are *not* `700000`.
+So a word whose top three bits are exactly `700000` is **not** a note: its low 15 bits (`& 77777`) are a tempo argument fed to `tpo` (`1606`), after which the loop advances and fetches the next word. `sas` skips on equality, so the in-line `jmp c9c` is reached only for words whose top 3 bits are *not* `700000`. This matches the spec's **Tempo word = `700000` octal + Tempo value** (smaller values are faster; tempo words are optional, default `252` octal, and may appear anywhere in the note stream), and the **Bar mark = `600000` octal** ([*music_intermediate_format.pdf*](../../hc1d/prs-docs/music_intermediate_format.pdf)).
 
 `c9c` (`1357`) then distinguishes a **bar line** (full word `600000`) from a real note via `sas (600000)`, and `cc3` (`1370`) unpacks a real note. **The field layout of a real note is defined entirely by the sequence of `rcl` (rotate combined AC:IO left) extractions in `cc3`.** At entry AC holds the note word; the first two `rcl 9s` rotate the combined 36-bit AC:IO a full 18 places, parking the note word in IO. Each subsequent `cla; rcl Ns` then pulls the next N high bits of IO up into AC:
 
@@ -141,7 +143,11 @@ Reconstructing the **bit field layout of a real note word** from those rotates (
 | 5–10 | 6 | **pitch** | `rcl 6s` → `c0p` | index into voice's detuned table; `0` and `1` are rests |
 | 11–17 | 7 | **duration** | `rcl 7s` → `tem` | duration in 64th notes |
 
-That accounts for all 18 bits (2+1+2+6+7). The four articulation bits are split: the first `rcl 2s` takes note bits 0–1, the intervening `ril 1s` discards the triplet bit (note bit 2, already captured into flag 6), and the second `rcl 2s` takes note bits 3–4 — so the 4-bit `cxt` index is formed from note bits {0,1,3,4}. There is no separate "real note" tag bit: a real note is simply any word that is neither tempo-tagged (top 3 == `700000`) nor the bar-line word `600000`. The exact width/order of pitch (6) and duration (7) are certain from `rcl 6s`/`rcl 7s`; the partition of the articulation/triplet bits across the two `rcl 2s` and `ril 1s` is the inferred part.
+That accounts for all 18 bits (2+1+2+6+7). The four articulation bits are split: the first `rcl 2s` takes note bits 0–1, the intervening `ril 1s` discards the triplet bit (note bit 2, already captured into flag 6), and the second `rcl 2s` takes note bits 3–4 — so the 4-bit `cxt` index is formed from note bits {0,1,3,4}. There is no separate "real note" tag bit: a real note is simply any word that is neither tempo-tagged (top 3 == `700000`) nor the bar-line word `600000`.
+
+> **Confirmed by the spec.** This reconstruction — including the split of the articulation bits around the triplet bit — exactly matches the producer-side definition in [*music_intermediate_format.pdf*](../../hc1d/prs-docs/music_intermediate_format.pdf), which writes the 18-bit Encoded note as **`AATAAPPPPPPDDDDDDD`**: two articulation bits, the triplet bit `T`, two more articulation bits, the 6-bit pitch `PPPPPP`, and the 7-bit duration `DDDDDDD`. The four articulation bits encode the value `AAAA` ∈ {0, 1, 2, 4, 8}. So what the code-reading marks "inferred" above is now ground-truth: pitch is 6 bits, duration 7 bits in 64ths, and the articulation/triplet partition is `{0,1} T {3,4}` as shown.
+>
+> The spec also pins the **pitch** scale that this 6-bit field indexes: `0` or `1` = **rest** (silent); `2` = **C1**; `3`–`76` octal = the equal-tempered semitones (12 per octave); `77` octal = the top note **CS6**. So the consumer's "`0` and `1` are rests" is exact, and the playable range is `2`–`77` octal — the keys of a 61-key organ manual plus one bonus pitch ([*music-workflow.pdf*](../../hc1d/prs-docs/music-workflow.pdf), step 5).
 
 **Duration math** (`cca`, `1415`+):
 
@@ -156,7 +162,9 @@ That accounts for all 18 bits (2+1+2+6+7). The four articulation bits are split:
       dac tem
 ```
 
-`sal 1s` is arithmetic shift left by 1 (×2). `szf i 6` skips when flag 6 is **set**, so the `add tem` runs only for a **non-triplet** note: a normal note ends up ×3, while a **triplet skips the add and stays ×2**. Both land in a common unit of **192nds of a whole note**: a normal field is in 64ths (×3 → 192nds), a triplet field is in triplet-64ths/"96ths" (×2 → 192nds). The final `sal 3s` (×8) gives headroom for fractional articulation scaling. The trailing `sma; sza i; jmp c0n` ORs "skip if AC<0" with "skip if AC!=0", so `jmp c0n` is reached only when AC==0 (a zero-duration note is dropped and the next word fetched).
+`sal 1s` is arithmetic shift left by 1 (×2). `szf i 6` skips when flag 6 is **set**, so the `add tem` runs only for a **non-triplet** note: a normal note ends up ×3, while a **triplet skips the add and stays ×2**. Both land in a common unit of **192nds of a whole note**: a normal field is in 64ths (×3 → 192nds), a triplet field is in triplet-64ths/"96ths" (×2 → 192nds). The final `sal 3s` (×8) gives headroom for fractional articulation scaling.
+
+> This ×3 / ×2 rule is stated verbatim in the spec: "`DDDDDDD` … duration in 64ths of a whole note … is multiplied by 3 if T=0, or 2 if T=1, to get duration in 192nds" ([*music_intermediate_format.pdf*](../../hc1d/prs-docs/music_intermediate_format.pdf)). The code's `×2` then conditional `+tem` is precisely that. The trailing `sma; sza i; jmp c0n` ORs "skip if AC<0" with "skip if AC!=0", so `jmp c0n` is reached only when AC==0 (a zero-duration note is dropped and the next word fetched).
 
 **Articulation dispatch — the `cxt` table** (`1443`). `cc3` computed `c0x` = `(cxt + index)` and now does `xct .` (execute one instruction from the table). Each table entry is one *executable* instruction per articulation class; it scales the duration in `AC` to produce the **release (silent) time**, from which the **sounding** time is derived:
 
@@ -183,6 +191,8 @@ That accounts for all 18 bits (2+1+2+6+7). The four articulation bits are split:
       sar 1s            / /2   -> 5x/8   (so s removes 5/8 of the note: staccato)
 1471  jmp . (c5x)
 ```
+
+> **Confirmed by the spec.** These five release fractions are exactly the articulation classes defined in [*music_intermediate_format.pdf*](../../hc1d/prs-docs/music_intermediate_format.pdf), where the 4-bit articulation value `AAAA` selects: `0` = normal (7/8 sounded, **1/8 silent** = `e`), `1` = quarter (3/4 sounded, **1/4 silent** = `q`), `2` = half (1/2, **1/2** = `h`), `4` = staccato (3/8 sounded, **5/8 silent** = `s`), `8` = legato (full sound, **0 silent** = `l`). So the `cxt` table is indexed by that very value (entries at offsets `0`/`1`/`2`/`4`/`8`), and each entry's shift produces the spec's silent fraction. The original-source authoring of these letters is the Harmony Compiler's input language, where the copyist writes `e`/`q`/`h`/`s`/`l` per note ([*MusicCompiler-a.pdf*](../../hc1d/prs-docs/MusicCompiler-a.pdf), p. 6 / [*MusicCompiler-b.pdf*](../../hc1d/prs-docs/MusicCompiler-b.pdf), p. 6).
 
 After `c0x` produces the release time, `cc3` finishes:
 

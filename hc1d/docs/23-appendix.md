@@ -84,15 +84,17 @@ Addresses are **approx** (from the `hc1d.lst` symbol dump). They drift because t
 | `pv1..pvh` | 02517–02651 | 1275–1479 | **Pseudo handlers** (musical meaning partly inferred): see below. |
 | `key`/`pva`/`pum`/`pue`/`pus`/`puf`/`puw` | 02662 | 1352–1399 | **Key-signature** handler: apply sharps/flats by rewriting `kt`/`mt`. |
 
-### Pseudo handlers `pv*` (musical roles — partly inferred)
+### Pseudo handlers `pv*` (musical roles per [*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf))
+
+The five articulation pseudos set the running default articulation `ss` (the same letters also work per-note via `s2b`…); per the spec (p. 6 §I.B.6, p. 9 §I.D.5) `s`=staccato, `l`=legato, `e`=eighth (the default mode at the start of each line), `h`=half, `q`=quarter — the `ss` bit value of each equals its intermediate-format articulation code.
 
 | Label | Pseudo | `.mac` line | Effect |
 |---|---|---|---|
-| `pv1` | `s` | 1275 | `ss := 200000` (sle-status bit; staccato/slur — inferred). |
-| `pv2` | `l` | 1277 | `ss := 400000` (legato — inferred). |
-| `pv3` | `e` | 1279 | `ss := 0` (even / clear articulation — inferred). |
-| `pvf` | `h` | 1281 | `ss := 40000`. |
-| `pvg` | `q` | 1283 | `ss := 20000`. |
+| `pv1` | `s` | 1275 | `ss := 200000` (staccato; artic. value 4). |
+| `pv2` | `l` | 1277 | `ss := 400000` (legato; value 8). |
+| `pv3` | `e` | 1279 | `ss := 0` (eighth / default; value 0). |
+| `pvf` | `h` | 1281 | `ss := 40000` (half; value 2). |
+| `pvg` | `q` | 1283 | `ss := 20000` (quarter; value 1). |
 | `pv5` | `bass` | 1286 | `st := 12`. |
 | `pv6` | `treble` | 1288 | `st := 26`. |
 | `pv7` | `tenor` | 1290 | `st := 16` (`/-- from 20, 070418`). |
@@ -305,7 +307,7 @@ Lower-case set, from the `s2z` table comments (`hc1d.mac` lines 1147–1167), th
 | Code | Glyph | Source | | Code | Glyph | Source |
 |---|---|---|---|---|---|---|
 | 00 | space | s2z | | 50 | q | s2z / png |
-| 21 | `\|` (measure sep) | s2z | | 51 | r | s1b / pn7,pnb |
+| 21 | `/` (slash = bar) | s2z, spec | | 51 | r | s1b / pn7,pnb |
 | 22 | s | s2z / pn1,pn5 | | 54 | − (minus) | s2z |
 | 23 | t | pn6/pn7/pnh | | 55 | `)` / `=` | s2z |
 | 24 | u | s2z / pn9,pnd | | 57 | `(` / `+` | s2z |
@@ -324,7 +326,7 @@ Lower-case set, from the `s2z` table comments (`hc1d.mac` lines 1147–1167), th
 | 46 | o | pn7 / pnc,pnh | | | | |
 | 47 | p | s2z / pnc,pnd | | | | |
 
-Red/black ribbon shifts (`35`/`34`) are how `red`/`blk` type the error indication in red ([§F](#f-error-code-catalog)). Codes `30` (y) and `71` (i) are **confirmed** by the pseudo-name strings (`pna`=key, `pnc`=copy, `pn9`=units); `33` (comma) and `67` (g) are **inferred** from the scan-1 handlers that count them, not from a glyph comment. Code `77` is typed by `cr` (apparently a carriage return) and also used as a mask in `rch`/`rp`. Codes not appearing above (e.g. 31, 32, 66, 75, 76) are **not pinned down by in-source comments** — treat as unknown.
+Red/black ribbon shifts (`35`/`34`) are how `red`/`blk` type the error indication in red ([§F](#f-error-code-catalog)). **Code `21` is the slash `/`** — the spec's measure bar and title terminator ("for the Compiler, the bar is represented by the slash `/`"; "the title is all material … through the first slash `/`", [*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), pp. 1, 8), and the title reader `pg` confirms it by reading until `21` (line 420). Earlier drafts mislabeled `21` as the vertical bar `|`; the `// |` source comment is Samson annotating the slash with a bar-line mark. Codes `30` (y) and `71` (i) are **confirmed** by the pseudo-name strings (`pna`=key, `pnc`=copy, `pn9`=units); `33` (comma) and `67` (g) are **inferred** from the scan-1 handlers that count them (the spec confirms the comma's and `g`'s *roles* — copy-previous and grace note — at [*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf), pp. 2, 7). Code `77` is typed by `cr` (apparently a carriage return) and also used as a mask in `rch`/`rp`. Codes not appearing above (e.g. 31, 32, 66, 75, 76) are **not pinned down by in-source comments** — treat as unknown.
 
 **Pseudo-command names** (decoded from `pn1..pnh`, confirmed): `pn1`=s, `pn2`=l, `pn3`=e, `pn4`=end, `pn5`=bass, `pn6`=treble, `pn7`=tenor, `pn8`=alto, `pn9`=units, `pna`=key, `pnb`=rest, `pnc`=copy, `pnd`=up, `pne`=down, `pnf`=h, `png`=q, `pnh`=tempo.
 
@@ -332,39 +334,39 @@ Red/black ribbon shifts (`35`/`34`) are how `red`/`blk` type the error indicatio
 
 ## F. Error-code catalog
 
-Each diagnostic is a 3-letter FIODEC code passed to `complaint`/`compla` (non-fatal, `jda er`) or `error` (`jda er1`). Codes are raised as `complaint flexo XXX` / `error flexo XXX`. Meanings are **derived from the routine that raises each**; the literal 3-letter→words expansions are educated reconstructions (hc1d never spells them out) and the musical semantics are partly inferred — both flagged. The two `s3x`/`rrz` table-overflow messages are full English text, not 3-letter codes.
+Each diagnostic is a 3-letter FIODEC code passed to `complaint`/`compla` (non-fatal, `jda er`) or `error` (`jda er1`). Codes are raised as `complaint flexo XXX` / `error flexo XXX`. The **`meaning` and `effect` columns are authoritative** — they are Peter Samson's own error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11, "Figure 4 ERRORS"); the bracketed `[xyz]` markers in the language spec ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf)) point at these codes. The **`raised at`/trigger** column is read from the code and remains the doc set's own analysis. Only the byte-level Flexowriter typing of these codes is "not emulator-verified." (Three of the earlier educated guesses were wrong and are corrected below: `unc` is *not* "unclear count" but **unprepared comma**; `tic` is *not* "triplet incomplete" but **time in comma note**; `etr` is *not* "terminal redundant" but **embellishment in triplet**.) The two `s3x`/`rrz` table-overflow messages are full English text, not 3-letter codes.
 
-| Code | Kind | Raised at (label / `.mac` line) | Meaning (derived; expansion + music semantics inferred) |
-|---|---|---|---|
-| `tmf` | error | `s1z` / 645 | Scan-1: field-count overflow — reached when `cm+r+ucd` exceeds 2 (`s1h`, `tgrec 2,s1y`). Likely "too many fields". |
-| `tff` | error | `s1x` / 647 | Scan-1: count/sign check failed (`r+g+ucd−2` minus, `s1x`). Likely "too few fields". |
-| `unc` | error | `s1w` / 649 | Scan-1: time underflow — `tim` went minus (`s1m`). Likely "unclear (note) count". |
-| `ert` | error | `s1v` / 651 | Scan-1: note-value denominator `n2` not a power of two, or out of range (`s1n`/`s1p`). Illegal time/duration. (Distinct from the `ert,` routine label at line 569.) |
-| `nps` | error | `pcz` / 665 | `pc`: not a pseudo-statement — index ran past the pseudo name table (`tgrec npi`). |
-| `bbl` | complaint | after `s15`/`s18` count block / 747 | Bar-count mismatch: `n1 ≠ tbc` (`testel n1,tbc,te`). Likely "bad bar line". |
-| `tmr` | complaint | `s1e` path / 753 | Too many `r`'s (`tlesc 2,s1f` failed); forced to 1. |
-| `tmg` | complaint | `s1f` path / 757 | Too many `g`'s (`tlesc 2,s1g` failed); forced to 1. |
-| `tmc` | complaint | `s1g` path / 761 | Too many commas (`tlesc 2,s1h` failed); forced to 1. |
-| `dtu` | complaint | `s1p`→`s1o` / 822 | Dotted-time underflow: dotted value with `fu` already exhausted (`test1 fu`). (inferred) |
-| `nor` | complaint | `s24` / 875, `s26` / 881 | Repeated/conflicting accidental: sharp-flat after natural, or natural after sharp-flat (`testm aci` / `testel aci,(1`). (inferred) |
-| `tme` | complaint | `s28`→`s29` / 898 | Too many embellishments: `ete` already set (`test0 ete`). |
-| `tms` | complaint | `s2r` / 908 | Too many slur/sle marks: `si` set and `≠1` (`test0 si`/`trel (1`). |
-| `itg` | complaint | `2s2` / 932, `te1` / 1205 | Illegal triplet/grace timing: grace-note robbery exceeds available time, or leftover `rob` at the terminator. (inferred) |
-| `tic` | complaint | `s2t` / 944 | Triplet incomplete: triplet without fraction (`test0 fu`). (inferred) |
-| `air` | complaint | `s2s` / 954 | Accidental-in-rest / illegal accidental: `lt`>1 with accidental+embellishment present (`aci+ete`). (inferred) Written `complaint flex air` — `flex` is a likely retype slip for `flexo` ([§G](#g-6-character-significance-vs-retype-typos)). |
-| `uat` | complaint | `s40` / 964 | Unavailable tone / staff out of range: `ton` minus or `≥44` (`trmi`/`tlesc 44`). |
-| `aor` | complaint | `s41` / 976 | Accidental out of range: `nt[ton]+acc` < 2 or > 77 (`tlesc 2`/`tlesc 77`). Written `compalint flexo aor` — `compalint` is a likely retype slip for `complaint`. |
-| `eor` | complaint | `s39` / 1116 | Embellishment out of range: `tnf`/`tnd` pitch < 2 or > 76 (`tlesc 2`/`tgrec 76`). (inferred) |
-| `etr` | complaint | `s72` / 993 | Embellishment terminal redundant: `ete` set but `3i` clear at `s30` (`test0 ete`/`test0 3i`). (inferred) |
-| `eit` | complaint | `s79` / 1004 | Embellishment illegal time: trill/turn time `ex` came out negative (`trpl s73` failed). (inferred) |
-| `mtl` | complaint | `te` path / 1200 | Measure too long: `mm > 3u` (`tles 3u`). |
-| `mts` | complaint | `te9` / 1202 | Measure too short: `mm < 3u` (the `te9` branch). |
-| `ilr` | error | `pvb` / 1403 | Illegal rest: `rest` pseudo issued mid-measure (`test0 mm`). |
-| `ilc` | error | `pvc` / 1446 | Illegal copy: `copy` pseudo issued mid-measure (`test0 mm`). |
-| `blc` | error | `co3` / 1460 | Bad copy reference: copy source `n1` is 0 or ≥ current tape bar `tbc` (`trze`/`tles tbc`). |
-| `brc` | error | `co6` / 1467 | Backward/bad range copy: copy end `< cbh` (copy-begins-here) — `tgrel cbh` failed. |
+| Code | Kind | Meaning (per spec) | Effect (per spec) | Raised at / trigger (code analysis) |
+|---|---|---|---|---|
+| `air` | complaint | accidental in rest | accidental ignored | `s2s` / 954: `lt`>1 with `aci+ete` present. Written `complaint flex air` — `flex` is a retype slip for `flexo` ([§G](#g-6-character-significance-vs-retype-typos)). |
+| `aor` | complaint | accidental out of range | note replaced by rest | `s41` / 976: `nt[ton]+acc` < 2 or ≥ 77. Written `compalint flexo aor` — `compalint` is a retype slip for `complaint`. |
+| `bbl` | complaint | bad bar label | bar label ignored | after `s15`/`s18` / 747: bar-count mismatch `n1 ≠ tbc` (`testel n1,tbc,te`). |
+| `blc` | error | bad left argument to "copy" | "copy" ignored | `co3` / 1460: copy source `n1` is 0 or ≥ current tape bar `tbc`. |
+| `brc` | error | bad right argument to "copy" | "copy" ignored | `co6` / 1467: copy end `< cbh` (copy-begins-here). |
+| `dtu` | complaint | dot underflow | time truncated to 64th | `s1p`→`s1o` / 822: dotted value with `fu` already exhausted (`test1 fu`). |
+| `eit` | complaint | embellishment on illegal time | embellishment ignored | `s79` / 1004: figure won't fit, `ex = nft − ebl[]` came out negative (`trpl s73` failed). |
+| `eor` | complaint | embellishment out of range | embellishment ignored | `s39` / 1116: neighbor `tnf`/`tnd` pitch < 2 or > 76. |
+| `ert` | error | erroneous time | note ignored | `s1v` / 651: note value not a power of two / out of range (`s1n`/`s1p`). (Distinct from the `ert,` routine *label* at line 569.) |
+| `etr` | complaint | embellishment in triplet | embellishment ignored | `s72` / 993: `ete` set while `3i` (triplet) set at `s30`. |
+| `ilc` | error | illegally located "copy" | "copy" ignored | `pvc` / 1446: `copy` issued mid-measure (`test0 mm`). |
+| `ilr` | error | illegally located "rest" | "rest" ignored | `pvb` / 1403: `rest` issued mid-measure (`test0 mm`). |
+| `itg` | complaint | insufficient time for grace notes | grace note(s) ignored | `2s2` / 932, `te1` / 1205: grace-note robbery exceeds available time, or leftover `rob` at the terminator. |
+| `mtl` | complaint | measure too long | long measure compiled | `te` path / 1200: `mm > 3u` (`tles 3u`). |
+| `mts` | complaint | measure too short | short measure compiled | `te9` / 1202: `mm < 3u`. |
+| `nor` | complaint | mixed accidentals | natural assumed | `s24` / 875, `s26` / 881: sharp/flat after natural, or natural after sharp/flat. |
+| `nps` | error | no such pseudoinstruction | word ignored | `pcz` / 665: index ran past the pseudo name table (`tgrec npi`). |
+| `tff` | error | too few fields in note | note ignored | `s1x` / 647: count/sign check failed (`r+g+ucd−2` minus). |
+| `tic` | complaint | time in comma note | comma ignored | `s2t` / 944: comma note carries a pending fraction (`test0 fu`). |
+| `tmc` | complaint | more than one comma in note | one comma assumed | `s1g` path / 761: too many commas (`tlesc 2,s1h` failed); forced to 1. |
+| `tme` | complaint | too many embellishments in note | last embellishment taken | `s28`→`s29` / 898: `ete` already set (`test0 ete`). |
+| `tmf` | error | too many fields in note | note ignored | `s1z` / 645: `cm+r+ucd` exceeds 2 (`s1h`, `tgrec 2,s1y`). |
+| `tmg` | complaint | too many "g"s in note | one "g" assumed | `s1f` path / 757: too many `g`'s (`tlesc 2,s1g` failed); forced to 1. |
+| `tmr` | complaint | too many "r"s in note | one "r" assumed | `s1e` path / 753: too many `r`'s (`tlesc 2,s1f` failed); forced to 1. |
+| `tms` | complaint | too many "s","l","e" in note | last occurrence rules | `s2r` / 908: `si` set and `≠1` (`test0 si`/`trel (1`). |
+| `uat` | complaint | unavailable tone | note replaced by rest | `s40` / 964: `ton` minus or `≥44` (`trmi`/`tlesc 44`). |
+| `unc` | error | unprepared comma (no note before it) | note ignored | `s1w` / 649: a comma with nothing before it (`s1m` path). |
 
-> The `er`/`er1` machinery prints, once per offending measure, the header **"To err is human---to forgive, divine."** (the `text` block at `hc1d.mac` lines 573–576), then re-types the measure from the `f` buffer with the bad character in **red** and the 3-letter code appended.
+> The `er`/`er1` machinery prints, once per offending measure, the header **"To err is human---to forgive, divine."** (the `text` block at `hc1d.mac` lines 573–576), then re-types the measure from the `f` buffer with the bad character in **red** and the 3-letter code appended. The `kind` column (complaint vs. error) is the doc set's reading of which macro raises each (`compla`/`jda er` vs. `error`/`jda er1`); Samson's table lists meanings and effects, not that internal distinction.
 
 ---
 

@@ -23,6 +23,27 @@ error  U  =>  lac (U ; jda er1     (an "error")
 
 In both, `U` is a three-character **FIODEC error code** (e.g. `tmf`, `nor`, `mtl`). The body writes it with the `flexo` pseudo-op, e.g. `error flexo tmf` — `flexo xyz` packs the three 6-bit FIODEC characters of `xyz` into one 18-bit word, which `lac (U` loads as a literal into AC. (`flexo` is an *original-assembler* pseudo-op; the modern `macro1` reimplementation does not have it, which is one source of the `.err` noise — see the text-block note below.)
 
+> **The error codes are authoritative, not inferred.** Every three-letter code below is defined in Peter Samson's error table — [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11 ("Figure 4 ERRORS"), with `code — meaning — effect` columns; the bracketed `[xyz]` markers throughout the language spec ([*MusicCompiler-a.pdf*](../prs-docs/MusicCompiler-a.pdf)) cross-reference them. The full catalog (used to de-hedge the glosses below and to fill the [appendix](23-appendix.md)):
+>
+> | code | meaning | effect | | code | meaning | effect |
+> |---|---|---|---|---|---|---|
+> | `air` | accidental in rest | accidental ignored | | `mts` | measure too short | short measure compiled |
+> | `aor` | accidental out of range | note replaced by rest | | `nor` | mixed accidentals | natural assumed |
+> | `bbl` | bad bar label | bar label ignored | | `nps` | no such pseudoinstruction | word ignored |
+> | `blc` | bad left argument to "copy" | "copy" ignored | | `tff` | too few fields in note | note ignored |
+> | `brc` | bad right argument to "copy" | "copy" ignored | | `tic` | time in comma note | comma ignored |
+> | `dtu` | dot underflow | time truncated to 64th | | `tmc` | more than one comma in note | one comma assumed |
+> | `eit` | embellishment on illegal time | embellishment ignored | | `tme` | too many embellishments in note | last embellishment taken |
+> | `eor` | embellishment out of range | embellishment ignored | | `tmf` | too many fields in note | note ignored |
+> | `ert` | erroneous time | note ignored | | `tmg` | too many "g"s in note | one "g" assumed |
+> | `etr` | embellishment in triplet | embellishment ignored | | `tmr` | too many "r"s in note | one "r" assumed |
+> | `ilc` | illegally located "copy" | "copy" ignored | | `tms` | too many "s","l","e" in note | last occurrence rules |
+> | `ilr` | illegally located "rest" | "rest" ignored | | `uat` | unavailable tone | note replaced by rest |
+> | `itg` | insufficient time for grace notes | grace note(s) ignored | | `unc` | unprepared comma (no note before it) | note ignored |
+> | `mtl` | measure too long | long measure compiled | | | | |
+>
+> Only the **byte-level Flexowriter typing** of these codes remains "not emulator-verified"; their meanings are now sourced.
+
 The macro then does `jda er` / `jda er1`: **jump-and-deposit-AC**. `jda S` stores AC into cell `S` and begins executing at `S+1`. So the packed code arrives in the first word of the error routine. The two entries differ only in a sign flag:
 
 ```
@@ -221,7 +242,7 @@ s1v,  error flexo ert
       goto te
 ```
 
-`s1y` and `s1z` share the same code (`s1y,` is a bare label aliasing the line at `s1z`). Each calls `error` (the `er1` path, `uin = -1`, code prints in red), then `goto te` — `te` (line 1193) is the terminator/scan-restart routine, so these abandon the current measure and resume scanning there. The codes `tmf`, `tff`, `unc`, `ert` are three-char FIODEC mnemonics whose precise expansions are **inferred** and belong in the appendix error catalog rather than asserted here. (Note `ert` here is a *code* mnemonic, distinct from the `ert` *label* at line 569 — a name collision worth flagging for the reader.)
+`s1y` and `s1z` share the same code (`s1y,` is a bare label aliasing the line at `s1z`). Each calls `error` (the `er1` path, `uin = -1`, code prints in red), then `goto te` — `te` (line 1193) is the terminator/scan-restart routine, so these abandon the current measure and resume scanning there. The four codes are now sourced (error table, [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11): **`tmf`** = "too many fields in note" (note ignored), **`tff`** = "too few fields in note" (note ignored), **`unc`** = "unprepared comma — no note before it" (note ignored), **`ert`** = "erroneous time" (note ignored). All four "ignore the note and resume," consistent with the `goto te`. (Note `ert` here is a *code* mnemonic, distinct from the `ert` *label* at line 569 — a name collision worth flagging for the reader.)
 
 ### `s3x` — table overflow (lines 654–658)
 
@@ -249,7 +270,7 @@ rry,  goto eha          jmp eha
 ### `pcz` — no such pseudo-command (lines 665–672)
 
 ```
-pcz,  error flexo nps    lac (flexo nps ; jda er1   (code: "no pseudo", inferred)
+pcz,  error flexo nps    lac (flexo nps ; jda er1   (nps = "no such pseudoinstruction" -> word ignored)
       test0 chr, te      lac chr ; sza i ; jmp te     (jump te if chr == 0)
 pz2,  call rch           jda rch
       store chr          dac chr
@@ -259,7 +280,7 @@ pz3,  move chr, trm      lac chr ; dac trm
       goto te            jmp te
 ```
 
-`pcz` (reached from the pseudo-command dispatcher `pc` at line 1227, `tgrec npi, pcz`, when the typed keyword index runs past the `pn1..pnh` table) reports code `nps` ("no pseudo" — *inferred*) via `error`, then **flushes the rest of the bad pseudo-command line** so scanning can resync: it reads characters with `call rch` until it hits a `0` (`test0`/`trze pz3`) or the measure bar `|` (FIODEC `21`), saves the terminating char into `trm`, and `goto te`. This recovery loop is why a typo in a pseudo-command does not derail the whole compile — hc1d skips to the next measure boundary and continues.
+`pcz` (reached from the pseudo-command dispatcher `pc` at line 1227, `tgrec npi, pcz`, when the typed keyword index runs past the `pn1..pnh` table) reports code **`nps`** — "no such pseudoinstruction → word ignored" (error table, [*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11) — via `error`, then **flushes the rest of the bad pseudo-command line** so scanning can resync: it reads characters with `call rch` until it hits a `0` (`test0`/`trze pz3`) or the measure bar `|` (FIODEC `21`), saves the terminating char into `trm`, and `goto te`. This recovery loop is why a typo in a pseudo-command does not derail the whole compile — hc1d skips to the next measure boundary and continues.
 
 ---
 
@@ -267,4 +288,4 @@ pz3,  move chr, trm      lac chr ; dac trm
 
 The error subsystem turns the compiler from a silent failure into a *teaching* tool. A single `compla`/`error` macro call from any scanner (passing a 3-char FIODEC code in AC via `jda`) triggers: the once-only "To err is human---to forgive, divine." banner; a full **replay of the offending measure from the `f` buffer**, line-wrapped at ~64 columns, with the **red ribbon bracketing the exact terminator** where the fault was caught; and the **error code printed (red for `error`, black for `compla`)**. `uin`'s sign then decides whether the routine returns to a `compla` caller that resumes scanning in place, or to an `error` caller that (by convention) `goto te`s to abandon the measure. The `red`/`blk` helpers keep the ribbon state in `rb` so shifts are never doubled. Separately, the plain-text fatal handlers `s3x`/`rrz` type a one-line message and **halt** when a buffer overflows, and `pcz` recovers gracefully from an unknown pseudo-command by flushing to the next bar. Because the IOTs (`tyo`, `wr`/`fee`/`ppp`) and the `text`/`flexo` pseudo-ops are not modeled by the emulator/modern assembler, all the byte-level typing behavior here is documented as historical/inferred.
 
-The three-character FIODEC codes seen here (`tmf`, `tff`, `unc`, `ert`, `nps`) and those raised elsewhere (`bbl`, `tmr`, `tmg`, `tmc`, `dtu`, `nor`, `tme`, `tms`, `itg`, `tic`, `uat`, `aor`, `etr`, `eit`, `eor`, `mtl`, `mts`, `ilr`, `ilc`, `blc`, `brc`, …) feed directly into the **appendix error-code catalog** — the next thing to compile from the full set of `compla`/`error` call sites.
+The three-character FIODEC codes seen here (`tmf`, `tff`, `unc`, `ert`, `nps`) and those raised elsewhere (`bbl`, `tmr`, `tmg`, `tmc`, `dtu`, `nor`, `tme`, `tms`, `itg`, `tic`, `uat`, `aor`, `etr`, `eit`, `eor`, `mtl`, `mts`, `ilr`, `ilc`, `blc`, `brc`) are exactly the entries of Peter Samson's error table ([*MusicCompiler-b.pdf*](../prs-docs/MusicCompiler-b.pdf), p. 11), reproduced in full in the callout above and in the [appendix error-code catalog](23-appendix.md). The set of `compla`/`error` call sites in `hc1d.mac` is the producer of those very codes.
