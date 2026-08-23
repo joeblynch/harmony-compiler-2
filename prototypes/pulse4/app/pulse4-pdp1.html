@@ -1,0 +1,2203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PULSE//4 — square-wave tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bezel:#14161c;        /* app background — warm charcoal */
+  --panel:#1b1e27;        /* raised surfaces */
+  --well:#101219;         /* inset surfaces (grid) */
+  --line:#2a2f3d;
+  --ink:#d6dbe8;
+  --dim:#5f6880;
+  --amber:#ffb454;        /* time / transport / playhead */
+  --v0:#f9826c;           /* SQ1 coral */
+  --v1:#7ee787;           /* SQ2 mint */
+  --v2:#79c0ff;           /* SQ3 sky */
+  --v3:#d2a8ff;           /* SQ4 violet */
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --pix:"Silkscreen",var(--mono);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+  background:var(--bezel);color:var(--ink);
+  font-family:var(--mono);font-size:13px;
+  user-select:none;-webkit-user-select:none;
+}
+button{font-family:var(--mono);color:var(--ink);background:var(--panel);
+  border:1px solid var(--line);border-radius:8px;cursor:pointer;
+  touch-action:manipulation;font-size:12px;line-height:1}
+button:active{transform:translateY(1px)}
+button:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+
+/* ---------- header ---------- */
+header{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;
+  border-bottom:1px solid var(--line);background:var(--panel);flex:none;
+}
+.brand{font-family:var(--pix);font-size:15px;letter-spacing:1px;white-space:nowrap}
+.brand b{color:var(--amber);font-weight:700}
+.brand small{display:block;font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.5px}
+.tp{display:flex;gap:6px}
+.tp button{width:40px;height:34px;font-size:15px}
+#btnPlay.on,#btnLoop.on{background:#3a2c14;border-color:var(--amber);color:var(--amber);
+  box-shadow:0 0 10px rgba(255,180,84,.35)}
+.step{display:flex;align-items:center;gap:2px;border:1px solid var(--line);
+  border-radius:8px;background:var(--well);padding:2px}
+.step button{width:26px;height:28px;border:none;background:transparent;font-size:14px;color:var(--dim)}
+.step button:active{color:var(--amber);transform:none}
+.step .val{min-width:34px;text-align:center;font-weight:600}
+.step .lab{font-size:9px;color:var(--dim);padding:0 2px 0 6px;letter-spacing:1px}
+.hspace{flex:1}
+.io button{height:34px;padding:0 10px;font-size:11px;color:var(--dim)}
+.io{display:flex;gap:6px}
+
+/* ---------- mobile tabs ---------- */
+nav.tabs{display:none;flex:none;border-bottom:1px solid var(--line);background:var(--panel)}
+nav.tabs button{flex:1;border:none;border-radius:0;background:transparent;
+  padding:9px 0;font-family:var(--pix);font-size:11px;letter-spacing:1px;color:var(--dim)}
+nav.tabs button.on{color:var(--amber);box-shadow:inset 0 -2px 0 var(--amber)}
+
+/* ---------- main split ---------- */
+main{flex:1;display:flex;min-height:0}
+
+/* ---------- song pane ---------- */
+#songPane{width:252px;flex:none;border-right:1px solid var(--line);
+  display:flex;flex-direction:column;min-height:0;background:var(--bezel)}
+.paneTitle{font-family:var(--pix);font-size:10px;letter-spacing:2px;color:var(--dim);
+  padding:8px 10px 4px;display:flex;justify-content:space-between;gap:8px}
+.paneTitle b{color:var(--amber);font-weight:400}
+#scols{flex:1;overflow-y:auto;overscroll-behavior:contain;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
+  align-content:start;padding:4px 8px 12px}
+.scol{display:flex;flex-direction:column;gap:4px;min-width:0}
+.scol .sname{font-family:var(--pix);font-size:9px;text-align:center;
+  color:var(--vc);letter-spacing:1px;padding-bottom:2px}
+.frame{position:relative;text-align:center;padding:7px 0;border-radius:7px;
+  background:var(--well);border:1px solid var(--line);color:var(--ink);
+  cursor:pointer;touch-action:manipulation;font-size:12px}
+.frame.edit{border-color:var(--vc);color:var(--vc)}
+.frame.sel{background:var(--vc);border-color:var(--vc);color:#0d0f14;font-weight:600}
+.frame.live::before{content:"";position:absolute;left:3px;top:50%;width:4px;height:4px;
+  border-radius:50%;background:var(--amber);transform:translateY(-50%);
+  box-shadow:0 0 6px var(--amber)}
+.addf{padding:5px 0;border-radius:7px;color:var(--dim);background:transparent;
+  border:1px dashed var(--line);font-size:13px}
+#songStrip{flex:none;border-top:1px solid var(--line);padding:8px;
+  display:flex;flex-wrap:wrap;gap:6px;background:var(--panel)}
+#songStrip .grp{display:flex;gap:4px;align-items:center;border:1px solid var(--line);
+  border-radius:8px;padding:3px;background:var(--well)}
+#songStrip .grp span.glab{font-size:9px;color:var(--dim);padding:0 3px;letter-spacing:1px}
+#songStrip button{height:30px;padding:0 9px;font-size:11px;border:none;background:var(--panel)}
+#songStrip button:active{color:var(--amber)}
+
+/* ---------- pattern pane ---------- */
+#patPane{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+#patScroll{flex:1;overflow:auto;overscroll-behavior:contain;background:var(--well)}
+#cheads{position:sticky;top:0;z-index:5;display:grid;
+  grid-template-columns:34px repeat(4,minmax(0,1fr));
+  background:var(--panel);border-bottom:1px solid var(--line)}
+.chead{padding:5px 2px 6px;text-align:center;min-width:0;border-left:1px solid var(--line)}
+.chead .l1{display:flex;align-items:center;justify-content:center;gap:5px}
+.led{width:6px;height:6px;border-radius:50%;background:#2c3140;flex:none;
+  transition:background .18s,box-shadow .18s}
+.led.hot{background:var(--vc);box-shadow:0 0 8px var(--vc);transition:none}
+.cname{font-family:var(--pix);font-size:9px;letter-spacing:1px;color:var(--vc);
+  background:none;border:none;padding:3px 2px;border-radius:4px}
+.chead.muted .cname{color:var(--dim);text-decoration:line-through}
+.duty{border:1px solid var(--line);background:var(--well);color:var(--dim);
+  font-size:9px;padding:3px 4px;border-radius:5px}
+.chead .l2{display:flex;align-items:center;justify-content:center;gap:1px;margin-top:4px}
+.pstep{width:22px;height:22px;border:none;background:transparent;color:var(--dim);font-size:12px}
+.pstep:active{color:var(--vc);transform:none}
+.pnum{font-weight:600;font-size:12px;min-width:24px}
+.fno{font-size:9px;color:var(--dim);margin-left:3px}
+.chead.muted{opacity:.55}
+
+#prows{padding-bottom:8px}
+.prow{position:relative;display:grid;grid-template-columns:34px repeat(4,minmax(0,1fr));
+  height:26px;align-items:stretch}
+.prow.sub{background:rgba(255,255,255,.022)}
+.prow.beat{background:rgba(255,255,255,.055);box-shadow:inset 0 1px 0 rgba(255,255,255,.045)}
+.prow.play{background:rgba(255,180,84,.13);box-shadow:inset 0 0 14px rgba(255,180,84,.10)}
+.prow.play::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.prow.play .rn{color:var(--amber)}
+.rn{display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--dim)}
+.cell{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;
+  border-left:1px solid rgba(42,47,61,.55);cursor:pointer;touch-action:manipulation}
+.cell[data-mute="1"]{opacity:.35}
+.nt,.vl{display:inline-block;text-align:center;border-radius:4px;padding:2px 1px;line-height:1.2}
+.nt{min-width:3.6ch;color:var(--vc)}
+.nt.empty{color:#39404f}
+.nt.off{color:var(--dim);letter-spacing:1px}
+.vl{min-width:1.7ch;color:var(--ink)}
+.vl.empty{color:#39404f}
+.cur{background:var(--vc);color:#0d0f14 !important;font-weight:600}
+
+/* ---------- input panel ---------- */
+#panel{flex:none;border-top:1px solid var(--line);background:var(--panel);
+  display:flex;gap:7px;padding:8px;align-items:stretch}
+.pcol{display:flex;flex-direction:column;gap:6px;flex:none}
+.pcol button{width:44px;flex:1;font-size:11px}
+.octRead{width:44px;text-align:center;font-size:10px;color:var(--dim);letter-spacing:1px;
+  padding:2px 0;line-height:1}
+#pianoWrap{flex:1;min-width:0;position:relative}
+#piano{position:relative;height:100%;min-height:96px}
+.wk{position:absolute;top:0;bottom:0;background:#cfd6e4;border:1px solid #0c0e13;
+  border-radius:0 0 6px 6px;color:#5a6070;display:flex;align-items:flex-end;
+  justify-content:center;padding-bottom:5px;font-size:9px}
+.wk:active,.wk.dn{background:var(--amber)}
+.bk{position:absolute;top:0;height:58%;background:#10131a;border:1px solid #000;
+  border-radius:0 0 5px 5px;z-index:2;color:#6a7288;display:flex;align-items:flex-end;
+  justify-content:center;padding-bottom:4px;font-size:8px}
+.bk:active,.bk.dn{background:var(--amber);color:#0d0f14}
+#hexPad{flex:1;display:none;grid-template-columns:repeat(8,1fr);gap:5px;min-width:0}
+#hexPad button{font-size:14px;font-weight:600}
+body.volmode #pianoWrap{display:none}
+body.volmode #hexPad{display:grid}
+.kbdhelp{flex:none;text-align:center;font-size:10px;color:var(--dim);
+  padding:4px 8px 7px;background:var(--panel);letter-spacing:.3px}
+
+
+/* ---------- machine pane ---------- */
+#macPane{width:300px;flex:none;border-left:1px solid var(--line);background:var(--panel);
+  display:flex;flex-direction:column;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.mrow{padding:9px 11px;border-bottom:1px solid var(--line)}
+.mlab{font-family:var(--pix);font-size:9px;letter-spacing:1.5px;color:var(--dim);
+  display:block;margin-bottom:6px}
+#liveDot{display:none}
+#liveDot.live{display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--amber);box-shadow:0 0 7px var(--amber);vertical-align:middle;margin-left:4px;
+  animation:bl 1.6s ease-in-out infinite}
+@keyframes bl{50%{opacity:.25}}
+.seg{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--well)}
+.seg button{flex:1;border:none;border-radius:0;background:transparent;padding:8px 4px;
+  font-size:11px;color:var(--dim);letter-spacing:.5px}
+.seg button.on{background:#3a2c14;color:var(--amber)}
+.seg.vsel button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px}
+.seg.vsel b{font-family:var(--pix);font-size:9px;font-weight:400;letter-spacing:1px;color:var(--vc)}
+.seg.vsel i{font-style:normal;font-size:9px;color:var(--dim);white-space:nowrap}
+.seg.vsel button.on{background:#3a2c14}
+.seg.vsel button.on b{color:var(--amber)}
+.seg.vsel button.z b,.seg.vsel button.z i{opacity:.3}
+select,input[type=range]{width:100%;font-family:var(--mono);font-size:12px}
+select{background:var(--well);color:var(--ink);border:1px solid var(--line);
+  border-radius:8px;padding:7px 8px}
+input[type=range]{accent-color:var(--amber);height:26px}
+.stat{display:flex;justify-content:space-between;font-size:11px;padding:2px 0;color:var(--dim)}
+.stat b{color:var(--ink);font-weight:500}
+.stat b.warn{color:var(--v0)}
+.meter{height:5px;border-radius:3px;background:var(--well);overflow:hidden;margin:7px 0 3px;
+  border:1px solid var(--line)}
+.meter i{display:block;height:100%;background:var(--amber)}
+#dump{font-size:10px;line-height:1.55;color:var(--dim);max-height:150px;overflow-y:auto;
+  background:var(--well);border:1px solid var(--line);border-radius:8px;padding:7px 8px;
+  white-space:pre;overscroll-behavior:contain}
+#dump b{color:var(--amber);font-weight:400}
+.mbtns{display:flex;gap:6px}
+.mbtns button{flex:1;padding:9px 4px;font-size:11px}
+.chead .ch{font-size:9px;color:var(--dim);border:1px solid var(--line);background:var(--well);
+  padding:3px 5px;border-radius:5px;letter-spacing:.5px}
+.nt.bad{color:#ff6b6b;text-decoration:underline dotted}
+#status{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(16,18,25,.86);z-index:50;font-family:var(--pix);font-size:13px;
+  letter-spacing:2px;color:var(--amber);text-align:center;padding:20px}
+body.busy #status{display:flex}
+.lamp{width:9px;height:9px;border-radius:50%;background:#22262f;flex:none;
+  border:1px solid #000;transition:none}
+.lamp.on{background:var(--vc);box-shadow:0 0 9px var(--vc),0 0 18px var(--vc)}
+
+/* ---------- responsive ---------- */
+@media (max-width:1180px){
+  #macPane{display:none}
+  body.view-mac #macPane{display:flex;width:100%;border-left:none}
+  body.view-mac #patPane,body.view-mac #songPane{display:none}
+  nav.tabs{display:flex}
+}
+@media (max-width:880px){
+  #songPane{width:100%;border-right:none}
+  body.view-pat #songPane{display:none}
+  body.view-song #patPane{display:none}
+  body.view-mac #songPane{display:none}
+  .kbdhelp{display:none}
+  .brand small{display:none}
+  header{gap:7px;padding:7px 8px;flex-wrap:wrap}
+  .prow{height:25px}
+  body{font-size:12px}
+  #scols{grid-template-columns:repeat(4,1fr);padding:6px 10px 14px}
+  .io button{padding:0 8px}
+}
+@media (max-width:390px){
+  .step .lab{display:none}
+  .tp button{width:36px}
+}
+@media (prefers-reduced-motion:reduce){
+  .led{transition:none}
+  .prow.play,.prow.play::before,#btnPlay.on,#btnLoop.on,.frame.live::before{box-shadow:none}
+}
+</style>
+</head>
+<body class="view-pat">
+
+<header>
+  <div class="brand">PULSE<b>//4</b><small>a tracker for the PDP-1</small></div>
+  <div class="tp">
+    <button id="btnPlay" title="Play song (Space)">&#9654;</button>
+    <button id="btnLoop" title="Loop current frames (Enter)">&#10227;</button>
+    <button id="btnStop" title="Stop (Esc)">&#9632;</button>
+  </div>
+  <div class="step" id="bpmStep">
+    <span class="lab">BPM</span>
+    <button id="bpmDn">&#8722;</button><span class="val" id="bpmVal">120</span><button id="bpmUp">+</button>
+  </div>
+  <div class="step">
+    <span class="lab">ROWS</span>
+    <button id="resDn">&#8722;</button><span class="val" id="resVal">64</span><button id="resUp">+</button>
+  </div>
+  <div class="hspace"></div>
+  <div class="io">
+    <button id="btnNew">NEW</button>
+    <button id="btnSave">SAVE</button>
+    <button id="btnLoad">LOAD</button>
+    <input type="file" id="fileIn" accept=".json,application/json" hidden>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button id="tabPat" class="on">PATTERN</button>
+  <button id="tabSong">SONG</button>
+  <button id="tabMac">MACHINE</button>
+</nav>
+
+<main>
+  <section id="songPane">
+    <div class="paneTitle"><span>SONG &#8212; BAR ORDER</span><b id="songTitle"></b></div>
+    <div id="scols"></div>
+    <div id="songStrip">
+      <div class="grp"><span class="glab">PAT</span>
+        <button id="opPatDn">&#8722;</button><button id="opPatUp">+</button>
+        <button id="opPatNew">NEW</button><button id="opPatClone">CLONE</button>
+      </div>
+      <div class="grp"><span class="glab">FRAME</span>
+        <button id="opFrDup">DUP</button><button id="opFrDel">DEL</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="patPane">
+    <div id="patScroll">
+      <div id="cheads"></div>
+      <div id="prows"></div>
+    </div>
+  </section>
+
+  <aside id="macPane">
+    <div class="mrow">
+      <span class="mlab">SOUND SOURCE</span>
+      <div class="seg" id="engSeg">
+        <button data-eng="pdp1" class="on">PDP-1 MUSIC 13</button>
+        <button data-eng="synth">SYNTH</button>
+      </div>
+      <div class="stat" style="margin-top:7px"><span>console lamps</span>
+        <span id="lamps" style="display:flex;gap:5px;align-items:center"></span></div>
+    </div>
+
+    <div class="mrow">
+      <span class="mlab">CPU CLOCK</span>
+      <div class="seg" id="cpuSeg">
+        <button data-chm="1" class="on">CHM 92.6%</button>
+        <button data-chm="0">SPEC</button>
+      </div>
+    </div>
+
+    <div class="mrow">
+      <span class="mlab">TEMPERAMENT &#183; PT TABLE 02137</span>
+      <select id="tempSel"></select>
+    </div>
+
+    <div class="mrow">
+      <span class="mlab">TUNING &amp; DETUNE &#183; TUW 000011</span>
+      <div class="seg" id="detSeg">
+        <button data-det="stock" class="on">CHM STOCK</button>
+        <button data-det="flat" title="Zero the spread between voices, keep the machine's tuning">NO SPREAD</button>
+        <button data-det="a440" title="Pull the whole machine to concert pitch">A=440</button>
+      </div>
+      <div class="stat" style="margin-top:8px"><span>global tune bias</span><b id="biasVal"></b></div>
+      <input type="range" id="bias" min="-32" max="31" value="15">
+      <div class="stat"><span>concert A4 (mean)</span><b id="a4Val"></b></div>
+      <div class="stat"><span>voice spread</span><b id="spreadVal"></b></div>
+    </div>
+
+    <div class="mrow" id="modRow">
+      <span class="mlab">DRIFT &#183; SPARE PITCH-TABLE SLOTS <i id="liveDot"></i></span>
+      <div class="seg" id="modSeg">
+        <button data-shape="off" class="on">OFF</button>
+        <button data-shape="wow">WOW</button>
+        <button data-shape="drift" title="Click again to reroll">DRIFT</button>
+      </div>
+      <span class="mlab" style="margin-top:9px">VOICE &#8212; TAP TO AIM THE SLIDERS</span>
+      <div class="seg vsel" id="modVoices">
+        <button data-v="0" style="--vc:var(--v0)"><b>MEL</b><i></i></button>
+        <button data-v="1" style="--vc:var(--v1)"><b>ALT</b><i></i></button>
+        <button data-v="2" style="--vc:var(--v2)"><b>TEN</b><i></i></button>
+        <button data-v="3" style="--vc:var(--v3)"><b>BAS</b><i></i></button>
+      </div>
+      <div class="stat" style="margin-top:8px"><span>rate</span><b id="mRateVal"></b></div>
+      <input type="range" id="mRate" min="4" max="600" value="60">
+      <div class="stat"><span>depth</span><b id="mDepthVal"></b></div>
+      <input type="range" id="mDepth" min="0" max="60" value="14">
+      <span class="mlab" style="margin-top:9px">GRID &#183; EVENTS/SEC (THE TAPE COST)</span>
+      <div class="seg" id="gridSeg">
+        <button data-grid="8">8</button><button data-grid="16" class="on">16</button>
+        <button data-grid="24">24</button><button data-grid="32">32</button>
+      </div>
+      <div class="stat" style="margin-top:7px"><span>steps per voice</span><b id="mLevels">&#8212;</b></div>
+      <div class="stat"><span>slots patched</span><b id="mSlots">&#8212;</b></div>
+    </div>
+
+    <div class="mrow">
+      <span class="mlab">EVENT STREAM &#183; BANKS 1&#8211;2</span>
+      <div class="stat"><span>segments</span><b id="stSegs">&#8212;</b></div>
+      <div class="meter"><i id="stMeter" style="width:0"></i></div>
+      <div class="stat"><span>core words</span><b id="stWords">&#8212;</b></div>
+      <div class="stat"><span>wall time</span><b id="stTime">&#8212;</b></div>
+      <div class="stat"><span>paper tape</span><b id="stTape">&#8212;</b></div>
+      <div class="stat"><span>out of range</span><b id="stClip">&#8212;</b></div>
+    </div>
+
+    <div class="mrow">
+      <span class="mlab">FIRST SEGMENTS</span>
+      <div id="dump">compile to see the stream</div>
+    </div>
+
+    <div class="mrow">
+      <span class="mlab">PUNCH</span>
+      <div class="mbtns">
+        <button id="expRim">.RIM TAPE</button>
+        <button id="expWav">.WAV</button>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<div id="panel">
+  <div class="pcol">
+    <button id="pOctUp">OCT+</button>
+    <div class="octRead">OCT <span id="octVal">4</span></div>
+    <button id="pOctDn">OCT&#8722;</button>
+  </div>
+  <div id="pianoWrap"><div id="piano"></div></div>
+  <div id="hexPad"></div>
+  <div class="pcol">
+    <button id="pOff">OFF</button>
+    <button id="pClr">CLR</button>
+  </div>
+  <div class="pcol">
+    <button id="pUp">&#9650;</button>
+    <button id="pDn">&#9660;</button>
+  </div>
+</div>
+<div id="status"><span id="statusText">PUNCHING TAPE&#8230;</span></div>
+<div class="kbdhelp">One pattern = one bar &#183; range B-0 to C#6 &#183; Z&#8211;M / Q&#8211;P notes &#183; 1 = off &#183; Del = clear &#183; 0&#8211;F on vol column &#183; Tab next voice &#183; Space play &#183; Enter loop &#183; [ ] octave</div>
+
+<script>
+"use strict";
+const RIM_B64="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";
+const TEMPERAMENTS={"equal": {"name": "Equal temperament", "cents": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, "werckmeister3": {"name": "Werckmeister III (1691, Correct Temp. No. 1)", "cents": [0, -9.78, -7.82, -5.87, -9.78, -1.96, -11.73, -3.91, -7.82, -11.73, -3.91, -7.82]}, "werckmeister4": {"name": "Werckmeister IV (1691, No. 2)", "cents": [0, -17.6, -3.91, -5.87, -7.82, -1.96, -11.73, -5.87, -15.64, -9.78, 3.91, -13.69]}, "werckmeister5": {"name": "Werckmeister V (1691, No. 3, D=175)", "cents": [0, -3.91, 3.91, 0, -3.91, 3.91, 0, 1.96, -7.82, 0, 1.96, -1.96]}, "kirnberger2": {"name": "Kirnberger II (1771)", "cents": [0, -9.78, 3.91, -5.87, -13.69, -1.96, -9.78, 1.96, -7.82, -4.89, -3.91, -11.73]}, "kirnberger3": {"name": "Kirnberger III (1779)", "cents": [0, -9.78, -6.84, -5.87, -13.69, -1.96, -9.78, -3.42, -7.82, -10.27, -3.91, -11.73]}, "vallotti": {"name": "Vallotti (1/6 Pythagorean comma)", "cents": [0, -5.87, -3.91, -1.96, -7.82, 1.96, -7.82, -1.96, -3.91, -5.87, 0, -9.78]}, "young2": {"name": "Young's Second Temperament (1800)", "cents": [0, -9.78, -3.91, -5.87, -7.82, -1.96, -11.73, -1.96, -7.82, -5.87, -3.91, -9.78]}, "kellner": {"name": "Kellner's 'Bach' temperament (1977)", "cents": [0, -9.78, -5.47, -5.87, -10.95, -1.96, -11.73, -2.74, -7.82, -8.21, -3.91, -8.99]}, "meantone": {"name": "Quarter-comma meantone (Eb-G# layout)", "cents": [0, -23.95, -6.84, 10.27, -13.69, 3.42, -20.53, -3.42, -27.37, -10.27, 6.84, -17.11]}, "silbermann": {"name": "Silbermann (1/6 Pythagorean comma meantone)", "cents": [0, -13.69, -3.91, 5.87, -7.82, 1.96, -11.73, -1.96, -15.64, -5.87, 3.91, -9.78]}, "pythagorean": {"name": "Pythagorean (Eb-G# chain)", "cents": [0, 13.69, 3.91, -5.87, 7.82, -1.96, 11.73, 1.96, 15.64, 5.87, -3.91, 9.78]}, "just": {"name": "Just intonation (C major)", "cents": [0, 11.73, 3.91, 15.64, -13.69, -1.96, -9.78, 1.96, 13.69, -15.64, 17.6, -11.73]}};
+
+/* ============================================================================
+   PDP-1 core — ported from joeblynch/harmony-compiler-2 (src/pdp1/*.ts).
+   18-bit ones-complement, banked core, paper-tape reader, RIM loader.
+   Instruction timings are load-bearing: pitch comes from loop timing.
+   ========================================================================= */
+const W_LEN = 18;
+const W_MASK = 0o777777;
+const SIGN = 0o400000;
+const UNS = 0o377777;
+const NEG0 = 0o777777;
+const ADDR = 0o7777;
+const EXT = 0o170000;
+const BANK = 4096;
+const MEMT = 5;               // microseconds per memory access
+
+class TapeReader {
+  constructor(){ this.tape = null; this.pos = 0; }
+  mount(t){ this.tape = t; this.pos = 0; }
+  rpb(){
+    if (!this.tape) throw new Error("no tape mounted");
+    let w = 0;
+    for (let i = 0; i < 3;){
+      if (this.pos >= this.tape.length) throw new Error("read past end of tape");
+      const b = this.tape[this.pos];
+      if (b & 0o200){ w = (w << 6) | (b & 0o77); i++; }
+      this.pos++;
+    }
+    return w;
+  }
+}
+
+class Memory {
+  constructor(n){ this.banks = []; for (let i = 0; i < n; i++) this.banks.push(new Uint32Array(BANK)); }
+  get bankCount(){ return this.banks.length; }
+  read(a){ return this.banks[(a >> 12) & 0o17][a & ADDR]; }
+  write(a, v){ this.banks[(a >> 12) & 0o17][a & ADDR] = v; }
+}
+
+function popcnt(v){ let c = 0; while (v){ v &= v - 1; c++; } return c; }
+function toTwos(v){
+  if (v & SIGN){ if (v === NEG0) return 0; return ((v + 1) & W_MASK) | ~W_MASK; }
+  return v;
+}
+
+class CPU {
+  constructor(mem, tape){
+    this.mem = mem; this.tapeReader = tape;
+    this.pc = 0; this.io = 0; this.ac = 0;
+    this.running = false; this.overflow = 0;
+    this.pf = 0; this.ss = 0; this.tw = 0; this.extend = 0;
+  }
+  incPC(){ this.pc = (this.pc & EXT) | ((this.pc + 1) & ADDR); }
+  step(){
+    const w = this.mem.read(this.pc);
+    let d = MEMT;
+    this.incPC();
+    d += this.exec(w);
+    return d;
+  }
+  exec(word){
+    let d = 0, bad = false;
+    const op = (word >> 12) & 0o76;
+    let ind = (word >> 12) & 1;
+    const y = word & ADDR;
+    let ma = (this.pc & EXT) | y;
+
+    if (op < 0o64 && !(op === 0o16 && ind)){
+      if (!this.extend){
+        while (ind){
+          const iw = this.mem.read(ma); d += MEMT;
+          ind = (iw >> 12) & 1;
+          ma = (this.pc & EXT) | (iw & ADDR);
+        }
+      } else if (ind){
+        ma = this.mem.read(ma) & 0o177777; d += MEMT;
+      }
+    }
+
+    switch (op){
+      case 0o64: {                                   // skip group
+        let skip = 0;
+        if ((y & 0o0400) && (this.ac & SIGN)) skip = 1;        // sma
+        if ((y & 0o0200) && !(this.ac & SIGN)) skip = 1;       // spa
+        if ((y & 0o2000) && !(this.io & SIGN)) skip = 1;       // spi
+        if ((y & 0o0100) && !this.ac) skip = 1;                // sza
+        if ((y & 0o7770) === 0){                               // szf
+          const f = y & 0o7;
+          if (f === 7){ if (!this.pf) skip = 1; }
+          else if (f > 0 && !(this.pf & (1 << (6 - f)))) skip = 1;
+        }
+        if ((y & 0o7707) === 0){                               // szs
+          const s = (y & 0o70) >> 3;
+          if (s === 7){ if (!this.ss) skip = 1; }
+          else if (s > 0 && !(this.ss & (1 << (6 - s)))) skip = 1;
+        }
+        if (skip ^ ind) this.incPC();
+        break;
+      }
+      case 0o66: {                                   // shift / rotate
+        const n = popcnt(y & 0o777);
+        if (!ind){
+          switch (y & 0o7000){
+            case 0o3000:                                        // rcl
+              this.ac = (this.ac << n) | (this.io >>> (W_LEN - n));
+              this.io = (this.io << n) | (this.ac >>> W_LEN);
+              this.ac &= W_MASK; this.io &= W_MASK; break;
+            case 0o2000:                                        // ril
+              this.io = ((this.io << n) | (this.io >>> (W_LEN - n))) & ((1 << W_LEN) - 1); break;
+            case 0o5000:                                        // sal
+              this.ac = (this.ac & SIGN) | ((this.ac << n) & UNS);
+              if (this.ac & SIGN) this.ac |= (1 << n) - 1; break;
+            case 0o7000:                                        // scl
+              this.ac = (this.ac & SIGN) | ((this.ac << n) & UNS) | (this.io >>> (W_LEN - n));
+              this.io = (this.io << n) & W_MASK;
+              if (this.ac & SIGN) this.io |= (1 << n) - 1; break;
+            default: bad = true;
+          }
+        } else {
+          switch (y & 0o7000){
+            case 0o1000:                                        // rar
+              this.ac = (this.ac >>> n) | ((this.ac & ((1 << n) - 1)) << (W_LEN - n)); break;
+            case 0o3000:                                        // rcr
+              this.ac |= (this.io & ((1 << n) - 1)) << (W_LEN + n);
+              this.io = (this.io >>> n) | ((this.ac & ((1 << n) - 1)) << (W_LEN - n));
+              this.ac >>>= n; break;
+            case 0o5000:                                        // sar
+              this.ac = (this.ac & SIGN) | ((this.ac & UNS) >>> n);
+              if (this.ac & SIGN) this.ac |= ((1 << n) - 1) << (W_LEN - 1 - n); break;
+            default: bad = true;
+          }
+        }
+        break;
+      }
+      case 0o72:                                     // iot
+        if (y === 0o4074) this.extend = 1;                       // eem
+        else if (y === 0o0002 && ind) this.io = this.tapeReader.rpb();  // rpb
+        else bad = true;
+        break;
+      case 0o76:                                     // operate
+        if (y & 0o0200) this.ac = 0;                             // cla
+        if (y & 0o4000) this.io = 0;                             // cli
+        if ((y & 0o7770) === 0o0000 || (y & 0o7770) === 0o0010){  // clf / stf
+          const v = y >> 3, f = y & 0o7;
+          if (f === 7) this.pf = v ? 0o77 : 0;
+          else if (f > 0){ if (v) this.pf |= (1 << (6 - f)); else this.pf &= ~(1 << (6 - f)); }
+        }
+        if (y & 0o2000) this.ac |= this.tw;                      // lat
+        if (y & 0o1000) this.ac = (~this.ac) & W_MASK;           // cma
+        if (y & 0o0400) this.running = false;                    // hlt
+        break;
+      case 0o40: case 0o42: {                        // add / sub
+        let cy = this.mem.read(ma); d += MEMT;
+        const isSub = +(op === 0o42);
+        if (isSub) cy = (~cy) & W_MASK;
+        const sum = this.ac + cy;
+        let r = ((sum & W_MASK) + (sum >>> W_LEN)) & W_MASK;
+        this.overflow = ((+!((this.ac & SIGN) ^ (cy & SIGN))) ^ isSub) &
+                        (+((r & SIGN) !== (this.ac & SIGN)));
+        if (r === NEG0 && !(isSub && this.ac === NEG0 && cy === NEG0)) r = 0;
+        this.ac = r; break;
+      }
+      case 0o02: this.ac &= this.mem.read(ma); d += MEMT; break;               // and
+      case 0o24: this.mem.write(ma, this.ac); d += MEMT; break;                // dac
+      case 0o26:                                                               // dap
+        this.mem.write(ma, (this.mem.read(ma) & 0o770000) | (this.ac & ADDR));
+        // NOTE: divergence from harmony-compiler-2's cpu.ts, which charges dap
+        // 2 memory cycles on top of the fetch (15 us). On the PDP-1 dap is an
+        // ordinary memory-reference instruction at 10 us, like dac. The four
+        // `dap .+1` in `nxt` are what make the fetch cost 350 us exactly, as the
+        // block diagram states, and what make a segment split phase-neutral.
+        d += MEMT; break;
+      case 0o32: this.mem.write(ma, this.io); d += MEMT; break;                // dio
+      case 0o56: {                                                             // div
+        const dn = this.ac & SIGN;
+        let acm = this.ac, iom = this.io;
+        if (dn){ acm ^= W_MASK; iom ^= W_MASK; }
+        const dividend = (BigInt(acm) << BigInt(W_LEN - 1)) | BigInt(iom >>> 1);
+        const dw = this.mem.read(ma);
+        const vn = dw & SIGN;
+        const dvm = BigInt(vn ? (dw ^ W_MASK) : dw);
+        if (BigInt(acm) >= dvm){ d = 12 - MEMT; break; }
+        this.ac = Number(dividend / dvm);
+        this.io = Number(dividend % dvm);
+        if (dn && this.io !== W_MASK) this.io ^= W_MASK;
+        if ((!!dn !== !!vn) && this.ac !== 0) this.ac ^= W_MASK;
+        this.incPC(); d = 40 - MEMT; break;
+      }
+      case 0o34: this.mem.write(ma, 0); d += MEMT; break;                      // dzm
+      case 0o44: case 0o46:                                                    // idx / isp
+        this.ac = (this.mem.read(ma) + 1) & W_MASK;
+        if (this.ac === NEG0) this.ac = 0;
+        this.mem.write(ma, this.ac); d += MEMT;
+        if (op === 0o46 && (this.ac & SIGN) === 0) this.incPC();
+        break;
+      case 0o16:                                                               // jda
+        if (ind){
+          this.mem.write(ma, this.ac); d += MEMT;
+          this.ac = (this.overflow << 17) | (this.extend << 16) | this.pc;
+          this.pc = (this.pc & EXT) | ((y + 1) & ADDR);
+        } else bad = true;
+        break;
+      case 0o60: this.pc = ma; break;                                          // jmp
+      case 0o62:                                                               // jsp
+        this.ac = (this.overflow << 17) | (this.extend << 16) | this.pc;
+        this.pc = ma; break;
+      case 0o20: this.ac = this.mem.read(ma); d += MEMT; break;                // lac
+      case 0o70: this.ac = ind ? (~y) & W_MASK : y; break;                     // law
+      case 0o22: this.io = this.mem.read(ma); d += MEMT; break;                // lio
+      case 0o54: {                                                             // mul
+        const p = BigInt(toTwos(this.ac)) * BigInt(toTwos(this.mem.read(ma)));
+        const neg = p < 0n; const mag = neg ? -p : p;
+        this.ac = Number((mag >> BigInt(W_LEN - 1)) & BigInt(UNS));
+        this.io = Number(mag & BigInt(UNS)) << 1;
+        if (neg && (this.ac !== 0 || this.io !== 0)){ this.ac ^= W_MASK; this.io ^= W_MASK; }
+        d += 25 - MEMT; break;
+      }
+      case 0o50: if (this.ac !== this.mem.read(ma)) this.incPC(); d += MEMT; break;  // sad
+      case 0o52: if (this.ac === this.mem.read(ma)) this.incPC(); d += MEMT; break;  // sas
+      case 0o10: d += MEMT; d += this.exec(this.mem.read(ma)); break;                // xct
+      case 0o06: this.ac ^= this.mem.read(ma); d += MEMT; break;                     // xor
+      default: bad = true;
+    }
+    if (bad) throw new Error("unsupported instruction: " + word.toString(8).padStart(6, "0"));
+    return d;
+  }
+}
+
+class PDP1 {
+  constructor(banks = 3){
+    this.tapeReader = new TapeReader();
+    this.memory = new Memory(banks);
+    this.cpu = new CPU(this.memory, this.tapeReader);
+    this.breakpoint = -1;
+    this.singleInstruction = false;
+    this.address = 0;
+  }
+  get pc(){ return this.cpu.pc; }
+  get programFlags(){ return this.cpu.pf; }
+  get running(){ return this.cpu.running; }
+  setSenseSwitch(n, v){
+    const m = 1 << (6 - n);
+    if (v) this.cpu.ss |= m; else this.cpu.ss &= ~m;
+  }
+  start(addr = this.address){ this.cpu.pc = addr; return this.continue(); }
+  stop(){ this.cpu.running = false; }
+  continue(){
+    let d = 0;
+    this.cpu.running = true;
+    do { d += this.cpu.step(); }
+    while (this.cpu.running && this.cpu.pc !== this.breakpoint && !this.singleInstruction);
+    return d;
+  }
+  examine(a){ return this.memory.read(a); }
+  deposit(a, v){ this.memory.write(a, v); }
+  mountTape(t){ this.tapeReader.mount(t); }
+  readIn(tape, extension = 0){
+    if (tape) this.mountTape(tape);
+    const base = extension << 12;
+    let d = 0;
+    this.cpu.running = true;
+    this.cpu.pc = base;
+    for (;;){
+      const instr = this.tapeReader.rpb();
+      const op = (instr >> 12) & 0o76;
+      if (op === 0o32){                       // dio
+        this.cpu.io = this.tapeReader.rpb();
+        d += this.cpu.exec(instr);
+      } else if (op === 0o60){                // jmp — ends the load and launches
+        d += MEMT;
+        d += this.start(base | (instr & ADDR));
+        return d;
+      } else {
+        throw new Error("invalid RIM instruction " + instr.toString(8));
+      }
+    }
+  }
+}
+
+
+
+/* ============================================================================
+   PULSE//4 → PDP-1 Music 13 engine.
+
+   The tracker does NOT emit a Harmony Compiler intermediate tape. It emits the
+   *compiled event stream* directly — the two-word segments that Music 13's own
+   second pass would have produced — and drops them into core banks 1-2. The
+   1962 player then plays them, unmodified, and its four program flags are the
+   audio.
+
+   Segment (2 words, per pdp1m13 `cc4`/`nxt`):
+     word 1 : [pitch v1 : 6][pitch v2 : 6][pitch v3 : 6]
+     word 2 : [loopct/2  : 12][pitch v4 : 6]      <- note the order: cc4's
+              `rcr 6s` chain builds word 2 by rotating pitch4 in FIRST, so the
+              loop count ends up in the HIGH 12 bits. nxt's `rcr 6s` then
+              leaves the count alone in AC and parks pitch4 at the top of IO.
+   Terminator: a segment whose loopct/2 field is 0.
+
+   Pitch index: 0 = rest (increment 0 → phase frozen → silence).
+                1 = B0, 2 = C1, ... 63 = C#6.   midi = index + 22
+   Wall time of one segment = (loopct/2 + 1) × 350 µs nominal.
+     — loopct passes of `lup` at 175 µs each, plus the 350 µs `nxt` fetch,
+       which pays 2× the increment into every phase accumulator, so splitting
+       a long note across several segments is exactly phase-neutral.
+   ========================================================================= */
+
+const PT_BASE   = 0o2137;   // base equal-tempered frequency table
+const PT_LEN    = 64;
+const TAB       = 0o300;    // four detuned tables: 300/400/500/600
+const CB        = 0o253;    // compiler write pointer (pla's empty-song guard)
+const TUW       = 0o11;     // packed per-voice detune increments
+const NOG       = 0o700;    // bottom of compiled area in each bank
+const NOF       = 0o7776;   // top of usable memory per bank
+const STREAM0   = 0o10000 + NOG;      // first compiled word: bank 1, 10700
+const BANK_SPAN = NOF - NOG;          // 7076 = 3646 words usable per bank
+const STUB      = 0o2400;   // launcher stub in the (unused) tape buffer
+const PLA       = 0o1671;
+const NXT       = 0o1740;
+const US_UNIT   = 350;      // µs per duration unit
+const MAX_M     = 0o7777;   // 12-bit loopct/2 field
+const CAP_SEG   = BANK_SPAN;          // 3646 segments across banks 1-2
+const CHM_FACTOR = 0.92559; // CHM PDP-1 runs at 92.559% of spec
+
+const MIDI_MIN = 23, MIDI_MAX = 85;   // B0 .. C#6
+const midiToPitch = m => m - 22;
+
+/* ---------------------------------------------------------------- compile */
+/**
+ * song: { voices:[{order:[patId], patterns:{id:[{n,v}]}}], bpm, res }
+ * Returns { words, segs, ticks, rowUs, timeline, clipped, over }
+ *   timeline[i] = tick index at which segment i starts (for playhead mapping)
+ */
+/* Tier 1/2 drift: the pitch table has 64 slots per voice and a song only uses a
+   handful. Spare slots get filled with detuned copies of the pitches actually in
+   play, and the event stream walks a long note through them. Because `nxt` only
+   rewrites the frequency increment — it never touches the phase accumulator or
+   any envelope — stepping between slots is a glide, not a retrigger. */
+function modLfo(v, t, mod){
+  const rate = mod.rates[v];
+  const ph = v * 0.25;                       // voices a quarter cycle apart at t=0
+  if (mod.shape === "wow") return Math.sin(2 * Math.PI * (rate * t + ph));
+  const x = rate * t + ph * 4;               // drift: cosine-interpolated value noise
+  const i = Math.floor(x), f = x - i;
+  const rnd = n => {
+    let hs = Math.imul((n ^ (mod.seed | 0) ^ (v * 0x9E37)) | 0, 0x85EBCA6B);
+    hs ^= hs >>> 13; hs = Math.imul(hs, 0xC2B2AE35); hs ^= hs >>> 16;
+    return ((hs >>> 0) / 4294967295) * 2 - 1;
+  };
+  const a = rnd(i), b = rnd(i + 1);
+  return a + (b - a) * ((1 - Math.cos(f * Math.PI)) / 2);
+}
+function planVariants(used, mod){
+  const plan = { m: [0,0,0,0], slot: [{},{},{},{}], back: [{},{},{},{}], used, slots: 0 };
+  if (!mod || !mod.on) return plan;
+  // every voice gets its slots whether or not its depth is up, so raising a
+  // depth from zero never moves a slot index — it only rewrites the table
+  for (let v = 0; v < 4; v++){
+    if (!used[v].length) continue;
+    const free = 63 - used[v].length;
+    const m = Math.max(0, Math.min(8, Math.floor(free / (2 * used[v].length))));
+    plan.m[v] = m;
+    if (!m) continue;
+    const taken = new Set(used[v]); taken.add(0);
+    let next = 1;
+    const grab = () => { while (taken.has(next) && next < 64) next++; taken.add(next); return next; };
+    for (const p of used[v]){
+      const map = { 0: p };
+      for (let l = -m; l <= m; l++) if (l) { map[l] = grab(); plan.slots++; }
+      plan.slot[v][p] = map;
+      for (const l in map) plan.back[v][map[l]] = [p, +l];
+    }
+  }
+  return plan;
+}
+function writeVariants(pdp1, plan, mod){
+  let n = 0;
+  for (let v = 0; v < 4; v++){
+    const m = plan.m[v]; if (!m) continue;
+    const base = TAB + v * 0o100;
+    for (const p of plan.used[v]){
+      const map = plan.slot[v][p]; if (!map) continue;
+      const inc0 = pdp1.examine(base + p);
+      const depth = mod.depths[v];
+      for (let l = -m; l <= m; l++){
+        if (!l) continue;
+        const inc = Math.round(inc0 * Math.pow(2, (l * depth / m) / 1200));
+        pdp1.deposit(base + map[l], Math.max(1, Math.min(0o377777, inc)));
+        n++;
+      }
+    }
+  }
+  return n;
+}
+
+function compileStream(song, ROWS, RES, mod){
+  const V = song.voices;
+  // the stream must cover one full cycle of ALL voices, not just the longest:
+  // independent order lists mean the song repeats at the LCM of their lengths.
+  const gcd = (a, b) => b ? gcd(b, a % b) : a;
+  let bars = 1;
+  for (const v of V) bars = bars * v.order.length / gcd(bars, v.order.length);
+  const maxBars = Math.max(...V.map(v => v.order.length));
+  let lcmCapped = false;
+  if (bars > 512){ bars = maxBars; lcmCapped = true; }
+  const totalTicks = bars * ROWS;
+
+  // 1. flatten every voice to a per-tick sounding pitch index
+  let clipped = 0;
+  const sound = [];
+  for (let v = 0; v < 4; v++){
+    const vo = V[v], arr = new Int16Array(totalTicks);
+    let cur = 0;
+    for (let t = 0; t < totalTicks; t++){
+      const bar = Math.floor(t / ROWS) % vo.order.length;
+      const pat = vo.patterns[vo.order[bar]];
+      const c = pat ? pat[t % ROWS] : null;
+      if (c){
+        if (c.n === "off") cur = 0;
+        else if (c.n !== null){
+          let p = midiToPitch(c.n);
+          if (p < 1){ p = 1; clipped++; }
+          else if (p > 63){ p = 63; clipped++; }
+          cur = p;
+        }
+      }
+      arr[t] = cur;
+    }
+    sound.push(arr);
+  }
+
+  // 2. which pitches does each voice actually touch? the rest of its table is free
+  const used = sound.map(a => { const s = new Set();
+    for (const x of a) if (x) s.add(x); return [...s].sort((x, y) => x - y); });
+  const plan = planVariants(used, mod);
+  // "armed" depends only on the switch, never on rate/depth/voices — so the stream
+  // layout is fixed while those are being dragged and can be patched in place.
+  const armed = !!(mod && mod.on);
+
+  // 3. boundaries, in exact 350 µs units so nothing drifts:
+  //    every four-voice "instant" change, plus the modulation grid
+  const rowUs = 60 / song.bpm / RES * 1e6;
+  const unitAt = tick => Math.round(tick * rowUs / US_UNIT);
+  const totalUnits = unitAt(totalTicks);
+
+  const same = (a, b) => sound[0][a] === sound[0][b] && sound[1][a] === sound[1][b] &&
+                         sound[2][a] === sound[2][b] && sound[3][a] === sound[3][b];
+  const bounds = [{ u: 0, t: 0 }];
+  for (let t = 1; t < totalTicks; t++) if (!same(t, t - 1)) bounds.push({ u: unitAt(t), t });
+  let over = false;
+  if (armed){
+    const du = Math.max(2, Math.round(1e6 / (mod.grid || 16) / US_UNIT));
+    if (totalUnits / du > 24000){ over = true; bounds.length = 0; bounds.push({ u: 0, t: 0 }); }
+    else for (let u = du; u < totalUnits; u += du) bounds.push({ u, t: -1 });
+    bounds.sort((a, b) => a.u - b.u || b.t - a.t);
+  }
+  // no interval may be shorter than the 700 µs floor; a musical boundary outranks
+  // a modulation one when they collide
+  const keep = [];
+  for (const b of bounds){
+    const prev = keep[keep.length - 1];
+    if (!prev) { keep.push(b); continue; }
+    if (b.u - prev.u >= 2) keep.push(b);
+    else if (b.t >= 0 && prev.t < 0) keep[keep.length - 1] = b;
+  }
+  for (let i = 1; i < keep.length; i++) if (keep[i].t < 0) keep[i].t = keep[i - 1].t;
+
+  // 4. resolve each interval to four slot indices, coalescing repeats
+  const segsRaw = [];
+  for (let i = 0; i < keep.length; i++){
+    const u0 = keep[i].u, u1 = (i + 1 < keep.length ? keep[i + 1].u : totalUnits);
+    if (u1 <= u0) continue;
+    const sec = u0 * US_UNIT / 1e6;
+    const p = [0, 1, 2, 3].map(v => {
+      const base = sound[v][keep[i].t];
+      if (!base || !plan.m[v]) return base;
+      const mv = plan.m[v];
+      const l = Math.max(-mv, Math.min(mv, Math.round(modLfo(v, sec, mod) * mv)));
+      return plan.slot[v][base][l];
+    });
+    const last = segsRaw[segsRaw.length - 1];
+    if (!armed && last && last.p[0] === p[0] && last.p[1] === p[1] &&
+        last.p[2] === p[2] && last.p[3] === p[3]) last.u1 = u1;
+    else segsRaw.push({ u0, u1, p, t: keep[i].t });
+  }
+
+  // 5. emit, splitting anything past the 12-bit loop-count field
+  const words = [], timeline = [];
+  for (const s of segsRaw){
+    const units = s.u1 - s.u0;
+    const n = Math.ceil(units / (MAX_M + 1));
+    for (let i = 0; i < n; i++){
+      const share = Math.floor(units / n) + (i < units % n ? 1 : 0);
+      const m = Math.max(1, share - 1);
+      words.push((s.p[0] << 12) | (s.p[1] << 6) | s.p[2]);
+      words.push(((m & MAX_M) << 6) | s.p[3]);
+      timeline.push(s.t);
+    }
+  }
+  words.push(0, 0);                                  // terminator
+  if (words.length / 2 > CAP_SEG) over = true;
+
+  return { words, segs: words.length / 2 - 1, ticks: totalTicks, rowUs, timeline,
+           clipped, over, bars, lcmCapped, rows: ROWS, sound, plan, used };
+}
+
+/* ------------------------------------------------------- core load / launch */
+/* Boot: load the 1962 ROM, build the detuned tables, enter extend mode, halt.
+   Kept out of the render clock — `tun` costs ~49 ms of emulated time. */
+function boot(pdp1, rimBytes){
+  pdp1.address = 0o4;
+  pdp1.readIn(rimBytes);
+  retune(pdp1);
+  return [...Array(PT_LEN)].map((_, i) => pdp1.examine(PT_BASE + i));
+}
+function retune(pdp1){
+  pdp1.deposit(STUB + 0, 0o620212);                  // jsp tun
+  pdp1.deposit(STUB + 1, 0o724074);                  // eem
+  pdp1.deposit(STUB + 2, 0o760400);                  // hlt
+  pdp1.singleInstruction = false; pdp1.breakpoint = null;
+  pdp1.start(STUB);
+  pdp1.deposit(STUB + 3, 0o600000 | PLA);            // jmp pla  (render entry)
+}
+
+/* Walk the compiled area the way `put` does, wrapping at the bank boundary. */
+function* streamAddrs(n){
+  let addr = STREAM0, end = STREAM0 + BANK_SPAN;
+  for (let i = 0; i < n; i++){
+    yield addr;
+    addr++;
+    if (addr === end){ addr += 0o10000 - NOF + NOG; end = addr + BANK_SPAN; }
+  }
+}
+function segAddr(seg){
+  const it = streamAddrs(seg * 2 + 1);
+  let a = STREAM0; for (const x of it) a = x;
+  return a;
+}
+/* Live patch: rewrite only the pitch fields. Word 2's high 12 bits are the loop
+   count, so leaving them alone guarantees the timing and layout cannot move. */
+function writeStreamPitches(pdp1, words){
+  let i = 0;
+  for (const addr of streamAddrs(words.length)){
+    if (i & 1) pdp1.deposit(addr, (pdp1.examine(addr) & 0o777700) | (words[i] & 0o77));
+    else pdp1.deposit(addr, words[i]);
+    i++;
+  }
+}
+
+function loadStream(pdp1, words){
+  // banks 1-2, wrapping at the bank boundary exactly as `put` does
+  let addr = STREAM0, end = STREAM0 + BANK_SPAN;
+  for (const w of words){
+    pdp1.deposit(addr, w);
+    addr++;
+    if (addr === end){ addr += 0o10000 - NOF + NOG; end = addr + BANK_SPAN; }
+  }
+  pdp1.deposit(CB, addr & 0o177777);                 // != STREAM0 → pla proceeds
+  return addr;
+}
+
+function patchPitchTable(pdp1, basePt, cents){
+  for (let i = 0; i < PT_LEN; i++){
+    const base = basePt[i];
+    if (!base){ pdp1.deposit(PT_BASE + i, base); continue; }
+    // pt[1] = B0, pt[2] = C1 ... so pitch class of index i is (i + 10) % 12
+    const pc = (i + 10) % 12;
+    const v = Math.round(base * Math.pow(2, cents[pc] / 1200));
+    pdp1.deposit(PT_BASE + i, Math.max(1, Math.min(0o377777, v)));
+  }
+}
+
+/* ------------------------------------------------------------------ render */
+/**
+ * Renders one pass of the stream to interleaved stereo Float32 at sampleRate.
+ * Returns { left, right, seconds, segTimes, nxtCount }
+ */
+function render(pdp1, sampleRate, chm, maxSeconds = 600, onProgress){
+  const sampleUs = 1e6 / sampleRate;
+  const factor = chm ? CHM_FACTOR : 1;
+  const cap = Math.ceil(maxSeconds * sampleRate);
+  const left = new Float32Array(cap), right = new Float32Array(cap);
+
+  pdp1.singleInstruction = true;
+  pdp1.breakpoint = null;
+  pdp1.cpu.pc = STUB + 3;            // jmp pla
+  pdp1.cpu.running = true;
+
+  let t = 0, prevT = 0, next = 0, i = 0, prevPF = 0, nxtCount = 0;
+  const segTimes = [];
+
+  while (pdp1.cpu.running && i < cap){
+    if (pdp1.cpu.pc === NXT) segTimes.push(t / 1e6);
+    const d = pdp1.cpu.step() / factor;
+    prevT = t; t += d;
+    const pf = pdp1.cpu.pf;
+    while (next <= t && i < cap){
+      // pick whichever flag state sits closest to the ideal sample instant
+      const use = (prevT <= next && Math.abs(t - next) <= Math.abs(prevT - next)) ? pf
+                : (prevT <= next ? prevPF : pf);
+      left[i]  = (((use & 0o40) ? 0.5 : 0) + ((use & 0o20) ? -0.5 : 0)) * 0.6;
+      right[i] = (((use & 0o10) ? 0.5 : 0) + ((use & 0o04) ? -0.5 : 0)) * 0.6;
+      next += sampleUs; i++;
+      if (onProgress && (i & 0xFFFF) === 0) onProgress(i / cap);
+    }
+    prevPF = pf;
+  }
+  nxtCount = segTimes.length;
+  return { left: left.subarray(0, i), right: right.subarray(0, i),
+           seconds: i / sampleRate, segTimes, nxtCount };
+}
+
+/* -------------------------------------------------------------- RIM export */
+/* A punchable patch tape: dio/data pairs writing the stream, then `jmp`.
+   Bank 1-2 payload and the bank-0 launcher are separate READ IN sections,
+   because the RIM loader's address field is 12 bits within one bank.        */
+function rimTape(words, tables){
+  const out = [];
+  const push18 = w => { out.push(0o200 | ((w >> 12) & 0o77), 0o200 | ((w >> 6) & 0o77), 0o200 | (w & 0o77)); };
+  const blank = n => { for (let i = 0; i < n; i++) out.push(0); };
+  const section = (base, pairs, endJmp) => {
+    for (const [a, v] of pairs){ push18(0o320000 | (a & 0o7777)); push18(v); }
+    push18(0o600000 | (endJmp & 0o7777));
+  };
+  // section 1+2: the stream, split per bank; each ends by jumping to a hlt we planted
+  let addr = STREAM0, end = STREAM0 + BANK_SPAN;
+  const perBank = [[], []];
+  for (const w of words){
+    const b = (addr >> 12) - 1;
+    if (b < 0 || b > 1) break;                        // banks 1-2 only
+    perBank[b].push([addr & 0o7777, w]);
+    addr++;
+    if (addr === end){ addr += 0o10000 - NOF + NOG; end = addr + BANK_SPAN; }
+  }
+  blank(256);
+  for (let b = 0; b < 2; b++){
+    if (!perBank[b].length) continue;
+    const halt = 0o7777;                              // scratch cell at bank top
+    section(b + 1, perBank[b].concat([[halt, 0o760400]]), halt);
+    blank(16);
+  }
+  // section 3: bank 0 — the four pitch tables verbatim (so the tape carries its own
+  // temperament, detune and drift slots and never needs `tun`), then cb and launch
+  section(0, (tables || []).concat([
+    [CB, addr & 0o177777],
+    [STUB + 0, 0o724074],                             // eem
+    [STUB + 1, 0o600000 | PLA],                       // jmp pla
+  ]), STUB);
+  blank(192);
+  return new Uint8Array(out);
+}
+
+
+/* ================= state ================= */
+let ROWS = 64, RES = 16;              /* rows per bar, rows per beat (4/4) */
+const MAXPAT = 64, RESSTEPS = [4, 8, 16];
+const DUTIES = [0.125, 0.25, 0.5], DUTYLAB = ["12%","25%","50%"];
+const VC = ["--v0","--v1","--v2","--v3"];
+const CHLAB = ["L+","L\u2212","R+","R\u2212"];
+const $ = id => document.getElementById(id);
+
+const S = {
+  bpm: 108, octave: 4, title: "",
+  engine: "pdp1", chm: true, temp: "equal", tuw: 0o642017,
+  mod: { on: false, shape: "wow", grid: 16, seed: 7,
+         rates: [0.6,0.45,0.55,0.35], depths: [14,14,14,14], sel: [true,true,true,true] },
+  playing: false, mode: "song",
+  cursor: { area: "pat", v: 0, row: 0, sub: 0 },   // sub 0=note 1=vol
+  song:   { v: 0, f: 0 },
+  live: null,                                       // per-voice frame index while song plays
+  view: "pat",
+  voices: []
+};
+
+function emptyPat(){ return Array.from({length: ROWS}, () => ({ n: null, v: null })); }
+function mkVoice(name, duty){ return { name, duty, mute:false, patterns:{0: emptyPat()}, order:[0], editFrame:0 }; }
+function ensurePat(vo, id){ if (!vo.patterns[id]) vo.patterns[id] = emptyPat(); return vo.patterns[id]; }
+function clamp(x, a, b){ return Math.min(b, Math.max(a, x)); }
+
+/* which pattern a voice column is showing/editing right now */
+function shownFrame(v){
+  const vo = S.voices[v];
+  return (S.playing && S.mode === "song" && S.live) ? S.live[v] : vo.editFrame;
+}
+function shownPatId(v){ const vo = S.voices[v]; return vo.order[shownFrame(v)]; }
+function shownPat(v){ return ensurePat(S.voices[v], shownPatId(v)); }
+
+/* ================= songs ================= */
+const OLSON = {"t":"OLSON / PDP-1","bpm":108,"res":16,"v":[{"n":"MEL","d":2,"o":[0,0,0,0,0,0,0,1,2,3,4,5,6,3,4,7,2,3,4,5,6,3,4,7,2,3,4,5,6,3,4,4,4,8,9,9,4,8,9,9],"p":[[[0,-1]],[[0,-1],[48,75],[56,78]],[[0,78],[46,73],[48,75],[56,73]],[[0,73],[46,68],[48,70],[56,68]],[[0,68]],[[0,68],[47,73],[48,75],[56,73]],[[0,73],[48,75],[56,73]],[[0,68],[48,75],[56,78]],[[0,68],[32,70]],[[0,65]]]},{"n":"ALT","d":2,"o":[0,1,2,2,0,1,2,2,0,1,2,2,0,1,2,2,0,1,2,2,0,1,2,2,0,1,2,2,0,1,2,2,3,4,2,2,3,4,2,2],"p":[[[0,59]],[[0,59],[32,61]],[[0,61]],[[0,64]],[[0,64],[32,66]]]},{"n":"TEN","d":2,"o":[0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,2,3,0,0,2,3,0,0],"p":[[[0,56]],[[0,56],[32,58]],[[0,59]],[[0,59],[32,61]]]},{"n":"BAS","d":2,"o":[0,1,2,2,0,1,2,2,0,1,2,2,0,1,2,2,0,1,2,2,0,1,2,2,0,1,2,2,0,1,2,2,3,3,3,3,4,5,6,6],"p":[[[0,52]],[[0,52],[32,54]],[[0,49]],[[0,-1]],[[0,56]],[[0,56],[32,58]],[[0,53]]]}]};
+
+/* Olson, decoded from the Harmony Compiler intermediate tape
+   (github.com/joeblynch/pdp-1-boc, output/boc-olson.bin).
+   One tracker pattern = one bar. Tied notes merged; -1 = note off. */
+function loadCompact(d){
+  S.title = d.t; S.bpm = d.bpm;
+  RES = d.res; ROWS = RES * 4;
+  S.voices = d.v.map(dv => {
+    const vo = mkVoice(dv.n, dv.d);
+    vo.patterns = {};
+    dv.p.forEach((ev, i) => {
+      const pat = emptyPat();
+      ev.forEach(([r, n]) => { pat[r] = { n: n === -1 ? "off" : n, v: null }; });
+      vo.patterns[i] = pat;
+    });
+    vo.order = dv.o.slice();
+    return vo;
+  });
+  S.cursor = { area: "pat", v: 0, row: 0, sub: 0 };
+  S.song = { v: 0, f: 0 };
+}
+function blankSong(){
+  M.dirty = true;
+  S.title = ""; S.bpm = 120; RES = 4; ROWS = 16;
+  S.voices = [mkVoice("SQ1",2), mkVoice("SQ2",2), mkVoice("SQ3",2), mkVoice("SQ4",2)];
+  S.cursor = { area: "pat", v: 0, row: 0, sub: 0 };
+  S.song = { v: 0, f: 0 };
+}
+
+/* ================= audio ================= */
+let AC = null, nodes = [], waves = [];
+const freq = m => 440 * Math.pow(2, (m - 69) / 12);
+
+function makeWave(duty){
+  const N = 48, re = new Float32Array(N), im = new Float32Array(N);
+  for (let n = 1; n < N; n++) re[n] = (2 / (n * Math.PI)) * Math.sin(Math.PI * n * duty);
+  return AC.createPeriodicWave(re, im);
+}
+function initAudio(){
+  if (AC) return;
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  const comp = AC.createDynamicsCompressor();
+  const master = AC.createGain(); master.gain.value = 0.85;
+  comp.connect(master); master.connect(AC.destination);
+  waves = DUTIES.map(makeWave);
+  nodes = S.voices.map(vo => {
+    const osc = AC.createOscillator(); osc.setPeriodicWave(waves[vo.duty]);
+    const g = AC.createGain(); g.gain.value = 0;
+    const cg = AC.createGain(); cg.gain.value = vo.mute ? 0 : 0.19;
+    osc.connect(g); g.connect(cg); cg.connect(comp); osc.start();
+    return { osc, g, cg };
+  });
+}
+function setDutyNode(v){ if (AC) nodes[v].osc.setPeriodicWave(waves[S.voices[v].duty]); }
+function setMuteNode(v){ if (AC) nodes[v].cg.gain.setTargetAtTime(S.voices[v].mute ? 0 : 0.19, AC.currentTime, 0.01); }
+let sounding = [null,null,null,null];   // {midi,vol} as of schedule time
+function noteOn(v, t, midi, vol){
+  const s = sounding[v];
+  sounding[v] = { midi, vol };
+  const g = nodes[v].g.gain;
+  if (s && s.midi === midi){
+    // same pitch already ringing: tie it, no re-attack
+    if (s.vol !== vol) g.setTargetAtTime(vol / 15, t, 0.012);
+    return;
+  }
+  nodes[v].osc.frequency.setValueAtTime(freq(midi), t);
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(0, t);
+  g.linearRampToValueAtTime(vol / 15, t + 0.005);
+}
+function noteOff(v, t){
+  sounding[v] = null;
+  const g = nodes[v].g.gain;
+  g.cancelScheduledValues(t);
+  g.setTargetAtTime(0, t, 0.008);
+}
+function volTo(v, t, vol){ if (sounding[v]) sounding[v].vol = vol;
+  nodes[v].g.gain.setTargetAtTime(vol / 15, t, 0.012); }
+function preview(midi, v){
+  initAudio(); AC.resume();
+  if (S.playing) return;
+  sounding[v] = null;
+  const t = AC.currentTime + 0.001;
+  noteOn(v, t, midi, 13);
+  noteOff(v, t + 0.22);
+}
+
+/* ================= transport / scheduler ================= */
+let timer = null, nextT = 0, stepN = 0, uiQ = [], uiStep = -1;
+
+function locate(v, step){
+  const vo = S.voices[v];
+  const f = S.mode === "loop" ? vo.editFrame : Math.floor(step / ROWS) % vo.order.length;
+  return { f, row: step % ROWS, pat: ensurePat(vo, vo.order[f]) };
+}
+function scheduleStep(step, t){
+  for (let v = 0; v < 4; v++){
+    const { pat, row } = locate(v, step);
+    const c = pat[row];
+    if (c.n === "off") noteOff(v, t);
+    else if (c.n !== null) noteOn(v, t, c.n, c.v ?? 15);
+    else if (c.v !== null) volTo(v, t, c.v);
+  }
+  uiQ.push({ step, t });
+}
+function tick(){
+  while (nextT < AC.currentTime + 0.12){
+    scheduleStep(stepN, nextT);
+    nextT += 60 / S.bpm / RES;
+    stepN++;
+  }
+}
+async function play(mode){
+  initAudio(); AC.resume();
+  if (S.playing) stop(true);
+  if (S.engine === "pdp1"){
+    S.mode = mode;
+    try { startLive(mode === "loop", 0); }
+    catch (e){ alert(e.message); return; }
+    S.playing = true;
+    S.live = mode === "song" ? [0,0,0,0] : null;
+    $("btnPlay").classList.toggle("on", mode === "song");
+    $("btnLoop").classList.toggle("on", mode === "loop");
+    buildPattern(); renderHeads(); renderSong();
+    return;
+  }
+  S.mode = mode; S.playing = true;
+  S.live = mode === "song" ? [0,0,0,0] : null;
+  stepN = 0; uiQ = []; uiStep = -1; sounding = [null,null,null,null];
+  nextT = AC.currentTime + 0.06;
+  tick();
+  timer = setInterval(tick, 25);
+  $("btnPlay").classList.toggle("on", mode === "song");
+  $("btnLoop").classList.toggle("on", mode === "loop");
+  buildPattern(); renderHeads(); renderSong();
+}
+function stop(soft){
+  stopLive();
+  if (timer){ clearInterval(timer); timer = null; }
+  if (AC) for (let v = 0; v < 4; v++) noteOff(v, AC.currentTime);
+  S.playing = false; S.live = null; uiQ = []; uiStep = -1; sounding = [null,null,null,null];
+  $("btnPlay").classList.remove("on");
+  $("btnLoop").classList.remove("on");
+  for (let v = 0; v < 4; v++){ const el = $("led" + v); if (el) el.classList.remove("on"); }
+  if (!soft){ paintPlayRow(-1); buildPattern(); renderHeads(); renderSong(); }
+}
+
+/* playhead follows the audio clock */
+function raf(){
+  if (S.playing && S.engine === "pdp1" && LIVE.on && M.info){
+    const tick = liveTick();
+    if (tick !== uiStep){
+      uiStep = tick;
+      const bar = Math.floor(tick / ROWS);
+      if (S.mode === "song"){
+        let changed = false;
+        for (let v = 0; v < 4; v++){
+          const f = bar % S.voices[v].order.length;
+          if (S.live[v] !== f){ S.live[v] = f; changed = true; }
+        }
+        if (changed){ buildPattern(); renderHeads(); renderSong(); }
+      }
+      paintPlayRow(tick % ROWS);
+    }
+    setLamps();
+    requestAnimationFrame(raf);
+    return;
+  }
+  if (S.playing && AC){
+    let cur = null;
+    while (uiQ.length && uiQ[0].t <= AC.currentTime) cur = uiQ.shift();
+    if (cur && cur.step !== uiStep){ uiStep = cur.step; onPlayStep(cur.step); }
+  }
+  requestAnimationFrame(raf);
+}
+function onPlayStep(step){
+  const row = step % ROWS;
+  if (S.mode === "song"){
+    let changed = false;
+    for (let v = 0; v < 4; v++){
+      const f = Math.floor(step / ROWS) % S.voices[v].order.length;
+      if (S.live[v] !== f){ S.live[v] = f; changed = true; }
+    }
+    if (changed){ buildPattern(); renderHeads(); renderSong(); }
+  }
+  paintPlayRow(row);
+  for (let v = 0; v < 4; v++){
+    const c = shownPat(v)[row];
+    if (c.n !== null && c.n !== "off" && !S.voices[v].mute) flashLED(v);
+  }
+}
+
+/* ================= rendering ================= */
+const pad2 = n => String(n).padStart(2, "0");
+const PC = ["C-","C#","D-","D#","E-","F-","F#","G-","G#","A-","A#","B-"];
+const noteName = n => PC[n % 12] + (Math.floor(n / 12) - 1);
+
+function renderHeads(){
+  let h = `<div></div>`;
+  for (let v = 0; v < 4; v++){
+    const vo = S.voices[v], sf = shownFrame(v);
+    h += `<div class="chead${vo.mute ? " muted" : ""}" data-v="${v}" style="--vc:var(${VC[v]})">
+      <div class="l1"><span class="lamp" id="led${v}"></span>
+        <button class="cname" data-act="mute" title="Mute ${vo.name}">${vo.name}</button>
+        <span class="ch" title="program flag ${v + 1} &#8594; ${CHLAB[v]}">${CHLAB[v]}</span></div>
+      <div class="l2"><button class="pstep" data-act="pdn">&#8249;</button>
+        <span class="pnum">${pad2(vo.order[sf])}</span>
+        <button class="pstep" data-act="pup">&#8250;</button>
+        <span class="fno">F${sf + 1}/${vo.order.length}</span></div>
+    </div>`;
+  }
+  $("cheads").innerHTML = h;
+}
+
+let lastPlayRow = -1;
+function buildPattern(){
+  let h = "";
+  const pats = [0,1,2,3].map(shownPat);
+  const sub = Math.max(1, RES >> 2);
+  for (let r = 0; r < ROWS; r++){
+    const cls = r % RES === 0 ? " beat" : (r % sub === 0 ? " sub" : "");
+    h += `<div class="prow${cls}" data-row="${r}"><div class="rn">${pad2(r)}</div>`;
+    for (let v = 0; v < 4; v++){
+      const c = pats[v][r];
+      const nt = c.n === null ? `<span class="nt empty">&#183;&#183;&#183;</span>`
+               : c.n === "off" ? `<span class="nt off">OFF</span>`
+               : `<span class="nt${(c.n < MIDI_MIN || c.n > MIDI_MAX) ? " bad" : ""}">${noteName(c.n)}</span>`;
+      const vl = c.v === null ? `<span class="vl empty">&#183;</span>`
+               : `<span class="vl">${c.v.toString(16).toUpperCase()}</span>`;
+      h += `<div class="cell" data-v="${v}" data-row="${r}" data-mute="${S.voices[v].mute ? 1 : 0}" style="--vc:var(${VC[v]})">${nt}${vl}</div>`;
+    }
+    h += `</div>`;
+  }
+  $("prows").innerHTML = h;
+  if (S.playing && lastPlayRow >= 0) paintPlayRow(lastPlayRow);
+  paintCursor();
+}
+function paintPlayRow(row){
+  const prev = $("prows").querySelector(".prow.play");
+  if (prev) prev.classList.remove("play");
+  lastPlayRow = row;
+  if (row < 0) return;
+  const el = $("prows").children[row];
+  if (!el) return;
+  el.classList.add("play");
+  const sc = $("patScroll");
+  sc.scrollTop = el.offsetTop + $("cheads").offsetHeight - sc.clientHeight / 2;
+}
+function flashLED(v){
+  const led = $("led" + v);
+  if (!led) return;
+  led.classList.add("hot");
+  setTimeout(() => led.classList.remove("hot"), 110);
+}
+function paintCursor(){
+  document.querySelectorAll(".cur").forEach(e => e.classList.remove("cur"));
+  document.body.classList.toggle("volmode", S.cursor.area === "pat" && S.cursor.sub === 1);
+  if (S.cursor.area !== "pat") return;
+  const cell = $("prows").querySelector(`.cell[data-v="${S.cursor.v}"][data-row="${S.cursor.row}"]`);
+  if (cell){
+    cell.children[S.cursor.sub].classList.add("cur");
+    if (!S.playing && cell.scrollIntoView) cell.scrollIntoView({ block: "nearest" });
+  }
+}
+
+function renderSong(){
+  let h = "";
+  for (let v = 0; v < 4; v++){
+    const vo = S.voices[v];
+    h += `<div class="scol" style="--vc:var(${VC[v]})"><div class="sname">${vo.name}</div>`;
+    vo.order.forEach((pid, f) => {
+      const cls = ["frame"];
+      if (S.song.v === v && S.song.f === f) cls.push("sel");
+      else if (vo.editFrame === f) cls.push("edit");
+      if (S.playing && ((S.mode === "song" && S.live && S.live[v] === f) ||
+                        (S.mode === "loop" && vo.editFrame === f))) cls.push("live");
+      h += `<button class="${cls.join(" ")}" data-v="${v}" data-f="${f}">${pad2(pid)}</button>`;
+    });
+    h += `<button class="addf" data-v="${v}" title="Add frame">+</button></div>`;
+  }
+  $("scols").innerHTML = h;
+  if (S.playing && S.mode === "song"){
+    const liveBtn = $("scols").querySelector(".frame.live");
+    if (liveBtn){
+      const box = $("scols");
+      box.scrollTop = liveBtn.offsetTop - box.clientHeight / 2;
+    }
+  }
+}
+function renderVals(){
+  $("bpmVal").textContent = S.bpm;
+  $("resVal").textContent = ROWS;
+  $("octVal").textContent = S.octave;
+  $("songTitle").textContent = S.title || "";
+}
+/* rows per bar is always 4 beats; changing resolution rescales existing patterns */
+function setRes(newRes, rescale){
+  newRes = clamp(newRes, 4, 16);
+  const oldRows = ROWS, newRows = newRes * 4;
+  if (rescale && newRows !== oldRows){
+    const k = newRows / oldRows;
+    S.voices.forEach(vo => {
+      for (const id in vo.patterns){
+        const src = vo.patterns[id];
+        const dst = Array.from({ length: newRows }, () => ({ n: null, v: null }));
+        src.forEach((c, r) => {
+          if (c.n === null && c.v === null) return;
+          dst[clamp(Math.round(r * k), 0, newRows - 1)] = { n: c.n, v: c.v };
+        });
+        vo.patterns[id] = dst;
+      }
+    });
+  }
+  RES = newRes; ROWS = newRows; M.dirty = true; if (LIVE.on) stop();
+  S.cursor.row = clamp(S.cursor.row, 0, ROWS - 1);
+  renderAll();
+}
+function stepRes(d){
+  const i = RESSTEPS.indexOf(RES);
+  setRes(RESSTEPS[clamp((i < 0 ? 2 : i) + d, 0, RESSTEPS.length - 1)], true);
+}
+function renderAll(){ renderVals(); renderHeads(); buildPattern(); renderSong(); }
+
+/* ================= editing ops ================= */
+function cellAt(){ return shownPat(S.cursor.v)[S.cursor.row]; }
+function afterEdit(){ songEdited(); buildPattern(); }
+function putNote(midi){
+  midi = clamp(midi, 12, 119);
+  const c = cellAt(); c.n = midi;
+  preview(midi, S.cursor.v);
+  S.cursor.row = (S.cursor.row + 1) % ROWS;
+  afterEdit();
+}
+function putOff(){
+  const c = cellAt(); c.n = "off"; c.v = null;
+  S.cursor.row = (S.cursor.row + 1) % ROWS;
+  afterEdit();
+}
+function putVol(x){
+  const c = cellAt(); c.v = x;
+  S.cursor.row = (S.cursor.row + 1) % ROWS;
+  afterEdit();
+}
+function clearCur(){
+  const c = cellAt();
+  if (S.cursor.sub === 0){ c.n = null; c.v = null; } else c.v = null;
+  afterEdit();
+}
+function moveRow(d){
+  let r = S.cursor.row + d;
+  const vo = S.voices[S.cursor.v];
+  if (r < 0){ vo.editFrame = (vo.editFrame - 1 + vo.order.length) % vo.order.length; r = ROWS - 1; frameChanged(); }
+  else if (r >= ROWS){ vo.editFrame = (vo.editFrame + 1) % vo.order.length; r = 0; frameChanged(); }
+  S.cursor.row = r;
+  paintCursor();
+}
+function frameChanged(){
+  S.song = { v: S.cursor.v, f: S.voices[S.cursor.v].editFrame };
+  buildPattern(); renderHeads(); renderSong();
+}
+function adjustPat(v, f, d){
+  songEdited();
+  const vo = S.voices[v];
+  vo.order[f] = clamp(vo.order[f] + d, 0, MAXPAT - 1);
+  ensurePat(vo, vo.order[f]);
+  buildPattern(); renderHeads(); renderSong();
+}
+function firstUnused(vo){
+  for (let i = 0; i < MAXPAT; i++) if (!vo.order.includes(i)) return i;
+  return MAXPAT - 1;
+}
+function patNew(v, f){
+  songEdited();
+  const vo = S.voices[v], id = firstUnused(vo);
+  vo.order[f] = id; ensurePat(vo, id);
+  buildPattern(); renderHeads(); renderSong();
+}
+function patClone(v, f){
+  songEdited();
+  const vo = S.voices[v], id = firstUnused(vo);
+  vo.patterns[id] = ensurePat(vo, vo.order[f]).map(c => ({ n: c.n, v: c.v }));
+  vo.order[f] = id;
+  buildPattern(); renderHeads(); renderSong();
+}
+function selectFrame(v, f){
+  S.song = { v, f };
+  S.voices[v].editFrame = f;
+  S.cursor.v = v;
+  buildPattern(); renderHeads(); renderSong();
+}
+function frameAdd(v){
+  songEdited();
+  const vo = S.voices[v];
+  vo.order.push(vo.order[vo.order.length - 1]);
+  selectFrame(v, vo.order.length - 1);
+}
+function frameDup(v, f){
+  songEdited();
+  const vo = S.voices[v];
+  vo.order.splice(f + 1, 0, vo.order[f]);
+  selectFrame(v, f + 1);
+}
+function frameDel(v, f){
+  songEdited();
+  const vo = S.voices[v];
+  if (vo.order.length <= 1) return;
+  vo.order.splice(f, 1);
+  vo.editFrame = clamp(vo.editFrame, 0, vo.order.length - 1);
+  selectFrame(v, clamp(f, 0, vo.order.length - 1));
+}
+
+/* ================= input: pointer ================= */
+function on(id, ev, fn){ $(id).addEventListener(ev, fn); }
+function bindHold(el, fn){
+  let to = null, iv = null;
+  const stopH = () => { clearTimeout(to); clearInterval(iv); to = iv = null; };
+  el.addEventListener("pointerdown", e => {
+    e.preventDefault(); fn();
+    to = setTimeout(() => { iv = setInterval(fn, 110); }, 420);
+  });
+  ["pointerup","pointerleave","pointercancel"].forEach(t => el.addEventListener(t, stopH));
+}
+
+$("prows").addEventListener("pointerdown", e => {
+  const cell = e.target.closest(".cell");
+  if (!cell) return;
+  S.cursor = { area: "pat", v: +cell.dataset.v, row: +cell.dataset.row,
+               sub: e.target.classList.contains("vl") ? 1 : 0 };
+  paintCursor();
+});
+$("cheads").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const v = +b.closest(".chead").dataset.v, vo = S.voices[v];
+  if (b.dataset.act === "mute"){ vo.mute = !vo.mute; songEdited(); setMuteNode(v); renderHeads(); buildPattern(); }
+  else if (b.dataset.act === "pdn") adjustPat(v, shownFrame(v), -1);
+  else if (b.dataset.act === "pup") adjustPat(v, shownFrame(v), 1);
+});
+$("scols").addEventListener("click", e => {
+  const fr = e.target.closest(".frame");
+  if (fr){ S.cursor.area = "song"; selectFrame(+fr.dataset.v, +fr.dataset.f); return; }
+  const ad = e.target.closest(".addf");
+  if (ad){ S.cursor.area = "song"; frameAdd(+ad.dataset.v); }
+});
+
+/* song strip */
+bindHold($("opPatDn"), () => adjustPat(S.song.v, S.song.f, -1));
+bindHold($("opPatUp"), () => adjustPat(S.song.v, S.song.f, 1));
+on("opPatNew", "click", () => patNew(S.song.v, S.song.f));
+on("opPatClone", "click", () => patClone(S.song.v, S.song.f));
+on("opFrDup", "click", () => frameDup(S.song.v, S.song.f));
+on("opFrDel", "click", () => frameDel(S.song.v, S.song.f));
+
+/* transport + values */
+on("btnPlay", "click", () => (S.playing && S.mode === "song") ? stop() : play("song"));
+on("btnLoop", "click", () => (S.playing && S.mode === "loop") ? stop() : play("loop"));
+on("btnStop", "click", () => stop());
+bindHold($("bpmDn"), () => { S.bpm = clamp(S.bpm - 1, 40, 300); structuralChanged(); renderVals(); });
+bindHold($("bpmUp"), () => { S.bpm = clamp(S.bpm + 1, 40, 300); structuralChanged(); renderVals(); });
+const octMove = d => { S.octave = clamp(S.octave + d, 1, 5);
+  $("octVal").textContent = S.octave; buildPiano(); };
+on("resDn", "click", () => stepRes(-1));
+on("resUp", "click", () => stepRes(1));
+on("pOctDn", "click", () => octMove(-1));
+on("pOctUp", "click", () => octMove(1));
+
+/* panel buttons */
+on("pOff", "click", () => { S.cursor.area = "pat"; putOff(); });
+on("pClr", "click", () => { S.cursor.area = "pat"; clearCur(); });
+bindHold($("pUp"), () => { S.cursor.area = "pat"; moveRow(-1); });
+bindHold($("pDn"), () => { S.cursor.area = "pat"; moveRow(1); });
+
+/* tabs */
+function setView(x){
+  S.view = x;
+  ["pat","song","mac"].forEach(k => document.body.classList.toggle("view-" + k, x === k));
+  $("tabPat").classList.toggle("on", x === "pat");
+  $("tabSong").classList.toggle("on", x === "song");
+  $("tabMac").classList.toggle("on", x === "mac");
+}
+on("tabPat", "click", () => setView("pat"));
+on("tabSong", "click", () => setView("song"));
+on("tabMac", "click", () => { setView("mac"); if (!M.info) compileNow(false); renderMachine(); });
+
+/* piano + hex pad */
+const WHITE = [0,2,4,5,7,9,11,12], BLACK = [[1,0],[3,1],[6,3],[8,4],[10,5]];
+const WHINT = ["Z","X","C","V","B","N","M",","], BHINT = ["S","D","G","H","J"];
+function buildPiano(){
+  const base = (S.octave + 1) * 12;
+  let h = "";
+  WHITE.forEach((off, i) => {
+    h += `<button class="wk" data-n="${base + off}" style="left:${i * 12.5}%;width:12.1%">${WHINT[i]}</button>`;
+  });
+  BLACK.forEach(([off, gap], i) => {
+    h += `<button class="bk" data-n="${base + off}" style="left:${(gap + 1) * 12.5 - 4}%;width:8%">${BHINT[i]}</button>`;
+  });
+  $("piano").innerHTML = h;
+}
+$("piano").addEventListener("pointerdown", e => {
+  const k = e.target.closest("button"); if (!k) return;
+  e.preventDefault();
+  k.classList.add("dn");
+  const up = () => k.classList.remove("dn");
+  k.addEventListener("pointerup", up, { once: true });
+  k.addEventListener("pointerleave", up, { once: true });
+  S.cursor.area = "pat";
+  putNote(+k.dataset.n);
+});
+function buildHex(){
+  let h = "";
+  for (let i = 0; i < 16; i++)
+    h += `<button data-x="${i}">${i.toString(16).toUpperCase()}</button>`;
+  $("hexPad").innerHTML = h;
+  $("hexPad").addEventListener("pointerdown", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    e.preventDefault(); S.cursor.area = "pat"; putVol(+b.dataset.x);
+  });
+}
+
+/* ================= input: keyboard ================= */
+const NOTEKEYS = { z:0,s:1,x:2,d:3,c:4,v:5,g:6,b:7,h:8,n:9,j:10,m:11,",":12,l:13,".":14,";":15,"/":16,
+                   q:12,"2":13,w:14,"3":15,e:16,r:17,"5":18,t:19,"6":20,y:21,"7":22,u:23,i:24,"9":25,o:26,"0":27,p:28 };
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (/^(input|textarea|select)$/i.test(e.target.tagName)) return;
+  const k = e.key.toLowerCase();
+  let done = true;
+  if (k === " "){ (S.playing && S.mode === "song") ? stop() : play("song"); }
+  else if (k === "escape"){ stop(); }
+  else if (k === "["){ octMove(-1); }
+  else if (k === "]"){ octMove(1); }
+  else if (k === "enter"){
+    if (S.cursor.area === "song"){ S.cursor.area = "pat"; setView("pat"); paintCursor(); }
+    else (S.playing && S.mode === "loop") ? stop() : play("loop");
+  }
+  else if (S.cursor.area === "song"){
+    const vo = S.voices[S.song.v];
+    if (k === "arrowup") selectFrame(S.song.v, clamp(S.song.f - 1, 0, vo.order.length - 1));
+    else if (k === "arrowdown") selectFrame(S.song.v, clamp(S.song.f + 1, 0, vo.order.length - 1));
+    else if (k === "arrowleft" || k === "arrowright"){
+      const nv = clamp(S.song.v + (k === "arrowright" ? 1 : -1), 0, 3);
+      selectFrame(nv, clamp(S.song.f, 0, S.voices[nv].order.length - 1));
+    }
+    else if (k === "-") adjustPat(S.song.v, S.song.f, -1);
+    else if (k === "=" || k === "+") adjustPat(S.song.v, S.song.f, 1);
+    else if (k === "n") patNew(S.song.v, S.song.f);
+    else if (k === "c") patClone(S.song.v, S.song.f);
+    else if (k === "i") frameDup(S.song.v, S.song.f);
+    else if (k === "delete" || k === "backspace") frameDel(S.song.v, S.song.f);
+    else done = false;
+  }
+  else { /* pattern area */
+    if (k === "arrowup") moveRow(-1);
+    else if (k === "arrowdown") moveRow(1);
+    else if (k === "pageup") moveRow(-RES);
+    else if (k === "pagedown") moveRow(RES);
+    else if (k === "arrowleft" || k === "arrowright"){
+      let p = S.cursor.v * 2 + S.cursor.sub + (k === "arrowright" ? 1 : -1);
+      p = clamp(p, 0, 7);
+      S.cursor.v = p >> 1; S.cursor.sub = p & 1;
+      paintCursor();
+    }
+    else if (k === "tab"){
+      S.cursor.v = (S.cursor.v + (e.shiftKey ? 3 : 1)) % 4;
+      paintCursor();
+    }
+    else if (k === "delete" || k === "backspace") clearCur();
+    else if (k === "1") putOff();
+    else if (S.cursor.sub === 1 && /^[0-9a-f]$/.test(k)) putVol(parseInt(k, 16));
+    else if (S.cursor.sub === 0 && k in NOTEKEYS) putNote((S.octave + 1) * 12 + NOTEKEYS[k]);
+    else done = false;
+  }
+  if (done) e.preventDefault();
+});
+
+/* ================= save / load ================= */
+on("btnSave", "click", () => {
+  const data = { app: "pulse4", title: S.title, bpm: S.bpm, res: RES,
+    machine: { temp: S.temp, tuw: S.tuw, chm: S.chm, engine: S.engine, mod: S.mod },
+    voices: S.voices.map(v => ({ name: v.name, duty: v.duty, order: v.order, patterns: v.patterns })) };
+  const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = (S.title ? S.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") : "pulse4-song") + ".json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+on("btnLoad", "click", () => $("fileIn").click());
+on("btnNew", "click", () => {
+  if (!confirm("Start an empty song? Unsaved work is lost.")) return;
+  stop(); blankSong();
+  if (AC) for (let v = 0; v < 4; v++){ setDutyNode(v); setMuteNode(v); }
+  renderAll();
+});
+$("fileIn").addEventListener("change", e => {
+  const file = e.target.files[0]; if (!file) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const d = JSON.parse(rd.result);
+      if (!d || !Array.isArray(d.voices) || d.voices.length !== 4) throw 0;
+      stop();
+      S.bpm = clamp(+d.bpm || 120, 40, 300);
+      S.title = typeof d.title === "string" ? d.title.slice(0, 40) : "";
+      RES = RESSTEPS.includes(+d.res) ? +d.res : 4;
+      ROWS = RES * 4;
+      S.voices = d.voices.map((dv, i) => {
+        const vo = mkVoice(String(dv.name || "SQ" + (i + 1)).slice(0, 4), clamp(+dv.duty || 0, 0, 2));
+        vo.order = (Array.isArray(dv.order) && dv.order.length ? dv.order : [0])
+          .map(x => clamp(+x || 0, 0, MAXPAT - 1));
+        vo.patterns = {};
+        if (dv.patterns) for (const id in dv.patterns){
+          const src = dv.patterns[id];
+          if (!Array.isArray(src)) continue;
+          vo.patterns[id] = Array.from({ length: ROWS }, (_, r) => {
+            const c = src[r] || {};
+            const n = c.n === "off" ? "off" : (Number.isInteger(c.n) ? clamp(c.n, 12, 119) : null);
+            const vv = Number.isInteger(c.v) ? clamp(c.v, 0, 15) : null;
+            return { n, v: vv };
+          });
+        }
+        vo.order.forEach(id => ensurePat(vo, id));
+        return vo;
+      });
+      S.cursor = { area: "pat", v: 0, row: 0, sub: 0 };
+      S.song = { v: 0, f: 0 };
+      const mc = d.machine || {};
+      if (TEMPERAMENTS[mc.temp]) S.temp = mc.temp;
+      if (Number.isInteger(mc.tuw)) S.tuw = mc.tuw & 0o777777;
+      if (typeof mc.chm === "boolean") S.chm = mc.chm;
+      if (mc.engine === "synth" || mc.engine === "pdp1") S.engine = mc.engine;
+      if (mc.mod && typeof mc.mod === "object"){
+        const q = mc.mod, arr4 = (a, fb) => Array.isArray(a) && a.length === 4 ? a.slice() : fb;
+        S.mod = Object.assign(S.mod, q, {
+          // older files carried one global rate/depth and an on/off per voice
+          rates:  arr4(q.rates,  [0,1,2,3].map(() => +q.rate  || 0.6)),
+          depths: arr4(q.depths, [0,1,2,3].map(v =>
+                    Array.isArray(q.voices) && !q.voices[v] ? 0 : (+q.depth || 14))),
+          sel:    arr4(q.sel, [true,true,true,true]).map(Boolean),
+        });
+        delete S.mod.rate; delete S.mod.depth; delete S.mod.voices;
+      }
+      $("tempSel").value = S.temp;
+      [...$("engSeg").children].forEach(x => x.classList.toggle("on", x.dataset.eng === S.engine));
+      [...$("cpuSeg").children].forEach(x => x.classList.toggle("on", (x.dataset.chm === "1") === S.chm));
+      [...$("detSeg").children].forEach(x => x.classList.toggle("on",
+        (x.dataset.det === "stock") === (S.tuw === 0o642017)));
+      if (AC) for (let v = 0; v < 4; v++){ setDutyNode(v); setMuteNode(v); }
+      applyMachine(); compileNow(false); renderMachine(); renderAll();
+    } catch { alert("Couldn't read that file — expected a PULSE//4 song (.json)."); }
+  };
+  rd.readAsText(file);
+  e.target.value = "";
+});
+
+
+/* ======================= PDP-1 machine layer =======================
+   The machine runs continuously inside a ScriptProcessor: every callback steps
+   the real CPU forward and samples the four program flags at the audio rate.
+   Nothing is pre-rendered, so a slider can rewrite core memory under the
+   playhead and the change is heard from the very next segment fetch.        */
+const M = { pdp1: null, basePt: null, info: null, ready: false, loopOnly: false, dirty: true };
+const LIVE = { node: null, chain: [], on: false, cpuUs: 0, songUs: 0, nextUs: 0,
+               prevUs: 0, prevPF: 0, totalSec: 1, dutyAcc: [0,0,0,0], dutyWin: 0,
+               duty: [0,0,0,0], pending: 0 };
+const PTR_CELL = 0o1663, EB_CELL = 0o254;
+const RIM = (() => { const s = atob(RIM_B64), a = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; })();
+
+function machineBoot(){
+  M.pdp1 = new PDP1(3);
+  M.basePt = boot(M.pdp1, RIM);
+  M.ready = true;
+}
+/* Run a routine on the machine without disturbing where playback is sitting. */
+function withMachine(fn){
+  const c = M.pdp1.cpu;
+  const st = { pc: c.pc, ac: c.ac, io: c.io, running: c.running, ov: c.overflow,
+               ext: c.extend, si: M.pdp1.singleInstruction, bp: M.pdp1.breakpoint };
+  fn();
+  c.pc = st.pc; c.ac = st.ac; c.io = st.io; c.running = st.running;
+  c.overflow = st.ov; c.extend = st.ext;
+  M.pdp1.singleInstruction = st.si; M.pdp1.breakpoint = st.bp;
+}
+function applyMachine(){
+  if (!M.ready) machineBoot();
+  withMachine(() => {
+    patchPitchTable(M.pdp1, M.basePt, TEMPERAMENTS[S.temp].cents);
+    M.pdp1.deposit(TUW, S.tuw);
+    retune(M.pdp1);                                     // rebuild the four voice tables
+    if (M.info) writeVariants(M.pdp1, M.info.plan, S.mod);   // drift slots back on top
+  });
+  if (!LIVE.on) M.dirty = true;
+}
+
+/* tuw = [v1:3][v2:3][v3:3][v4:3][bias:6]; multiplier = 1 + ((field-4) + 2*bias)/512 */
+const tuwFields = w => [(w >> 15) & 7, (w >> 12) & 7, (w >> 9) & 7, (w >> 6) & 7];
+const tuwBias = w => { const b = w & 0o77; return b & 0o40 ? b - 64 : b; };
+const setTuw = (f, bias) => ((f[0] << 15) | (f[1] << 12) | (f[2] << 9) | (f[3] << 6) | (bias & 0o77));
+function voiceMult(v){
+  const f = tuwFields(S.tuw);
+  return 1 + ((f[v] - 4) + 2 * tuwBias(S.tuw)) / 512;
+}
+/* pt index 47 = A4; increment -> Hz is inc * (1/175us) / 2^18 */
+function a4Hz(){
+  const base = (M.basePt ? M.basePt[47] : 20185) * 5714.285714 / 262144;
+  const mid = (voiceMult(0) + voiceMult(1) + voiceMult(2) + voiceMult(3)) / 4;
+  return base * mid * (S.chm ? CHM_FACTOR : 1);
+}
+
+const selVoices = () => [0,1,2,3].filter(v => S.mod.sel[v]);
+function songForStream(loopOnly){
+  return { bpm: S.bpm, res: RES, voices: S.voices.map(vo => ({
+    order: loopOnly ? [vo.order[vo.editFrame]] : vo.order,
+    patterns: vo.mute ? {} : vo.patterns })) };
+}
+function compileNow(loopOnly){
+  M.loopOnly = !!loopOnly;
+  M.info = compileStream(songForStream(M.loopOnly), ROWS, RES, S.mod);
+  return M.info;
+}
+function streamUnits(words){
+  let u = 0;
+  for (let i = 0; i < words.length - 2; i += 2) u += ((words[i + 1] >> 6) & 0o7777) + 1;
+  return u;
+}
+const streamSeconds = words => streamUnits(words) * US_UNIT / 1e6 / (S.chm ? CHM_FACTOR : 1);
+
+/* ---------------------------------------------------------------- live audio */
+function armStream(c, resumeTick){
+  const pdp1 = M.pdp1, cpu = pdp1.cpu;
+  withMachine(() => retune(pdp1));
+  writeVariants(pdp1, c.plan, S.mod);
+  loadStream(pdp1, c.words);
+  pdp1.setSenseSwitch(6, true);            // SW6: loop at the end of the stream
+  pdp1.singleInstruction = true;
+  pdp1.breakpoint = null;
+  cpu.pc = STUB + 3; cpu.running = true;   // jmp pla
+  let g = 0;
+  while (cpu.pc !== NXT && cpu.running && g++ < 400) cpu.step();   // through pla's setup
+  let units = 0;
+  if (resumeTick > 0){                     // drop the cursor where the playhead was
+    const target = resumeTick / c.ticks * streamUnits(c.words);
+    for (let i = 0; i < c.segs; i++){
+      const m = ((c.words[i * 2 + 1] >> 6) & 0o7777) + 1;
+      if (units + m > target){
+        const a = segAddr(i);
+        pdp1.deposit(PTR_CELL, a);
+        pdp1.deposit(EB_CELL, (a & 0o170000) | NOF);
+        break;
+      }
+      units += m;
+    }
+  }
+  LIVE.totalSec = streamSeconds(c.words);
+  LIVE.songUs = units * US_UNIT / (S.chm ? CHM_FACTOR : 1);
+  LIVE.cpuUs = LIVE.nextUs = LIVE.prevUs = 0;
+  LIVE.prevPF = 0; LIVE.dutyWin = 0; LIVE.dutyAcc = [0, 0, 0, 0];
+}
+function fillLive(out){
+  const L = out.getChannelData(0), R = out.getChannelData(1), n = out.length;
+  const cpu = M.pdp1.cpu, factor = S.chm ? CHM_FACTOR : 1;
+  const sampleUs = 1e6 / AC.sampleRate;
+  let i = 0, guard = 0;
+  while (i < n && guard++ < 4000000){
+    if (!cpu.running){ cpu.pc = STUB + 3; cpu.running = true; LIVE.songUs = 0; }
+    if (cpu.pc === PLA) LIVE.songUs = 0;                     // the stream looped
+    const d = cpu.step() / factor;
+    LIVE.prevUs = LIVE.cpuUs; LIVE.cpuUs += d; LIVE.songUs += d;
+    const pf = cpu.pf;
+    LIVE.dutyWin += d;
+    if (pf & 0o40) LIVE.dutyAcc[0] += d;
+    if (pf & 0o20) LIVE.dutyAcc[1] += d;
+    if (pf & 0o10) LIVE.dutyAcc[2] += d;
+    if (pf & 0o04) LIVE.dutyAcc[3] += d;
+    while (LIVE.nextUs <= LIVE.cpuUs && i < n){
+      const use = (LIVE.prevUs <= LIVE.nextUs &&
+                   Math.abs(LIVE.cpuUs - LIVE.nextUs) > Math.abs(LIVE.prevUs - LIVE.nextUs))
+                  ? LIVE.prevPF : pf;
+      L[i] = (((use & 0o40) ? 0.5 : 0) + ((use & 0o20) ? -0.5 : 0)) * 0.6;
+      R[i] = (((use & 0o10) ? 0.5 : 0) + ((use & 0o04) ? -0.5 : 0)) * 0.6;
+      LIVE.nextUs += sampleUs; i++;
+    }
+    LIVE.prevPF = pf;
+  }
+  if (LIVE.dutyWin > 16000){
+    for (let v = 0; v < 4; v++) LIVE.duty[v] = LIVE.dutyAcc[v] / LIVE.dutyWin;
+    LIVE.dutyWin = 0; LIVE.dutyAcc = [0, 0, 0, 0];
+  }
+}
+function startLive(loopOnly, resumeTick){
+  initAudio(); AC.resume();
+  stopLive();
+  const c = compileNow(loopOnly);
+  if (c.over) throw new Error(`This needs ${c.segs} segments; banks 1-2 hold ${CAP_SEG}.\n` +
+                              `Lower the drift grid, or shorten the song.`);
+  armStream(c, resumeTick || 0);
+  if (!AC.createScriptProcessor)
+    throw new Error("This browser can't run the PDP-1 live. Switch the sound source to SYNTH.");
+  const node = AC.createScriptProcessor(4096, 0, 2);
+  node.onaudioprocess = e => { try { fillLive(e.outputBuffer); } catch (err){ stopLive(); } };
+  const lp = AC.createBiquadFilter();                 // the lamp drivers' RC filter
+  lp.type = "lowpass"; lp.frequency.value = 2000; lp.Q.value = 0.5;
+  const hp = AC.createBiquadFilter();                 // DC block
+  hp.type = "highpass"; hp.frequency.value = 30;
+  node.connect(lp); lp.connect(hp); hp.connect(AC.destination);
+  LIVE.node = node; LIVE.chain = [lp, hp]; LIVE.on = true;
+  M.dirty = false;
+  renderMachine();
+}
+function stopLive(){
+  if (LIVE.node){ LIVE.node.onaudioprocess = null; LIVE.node.disconnect(); }
+  LIVE.chain.forEach(n => n.disconnect());
+  LIVE.node = null; LIVE.chain = []; LIVE.on = false; LIVE.duty = [0, 0, 0, 0];
+}
+const liveTick = () => Math.floor(LIVE.songUs / 1e6 / LIVE.totalSec * M.info.ticks) % M.info.ticks;
+
+/* ------------------------------------------------- live parameter changes */
+/* Rate / shape / seed / voices: same layout, different slots. Rewrite the pitch
+   fields in place — segments already behind the playhead keep their old value
+   until the stream loops, which is exactly "from here forward". */
+function liveRestream(){
+  const c = compileStream(songForStream(M.loopOnly), ROWS, RES, S.mod);
+  if (c.words.length !== M.info.words.length) return false;
+  writeVariants(M.pdp1, c.plan, S.mod);
+  writeStreamPitches(M.pdp1, c.words);
+  M.info = c;
+  return true;
+}
+/* Depth / temperament / tuning: the stream is untouched, only the pitch tables. */
+function liveTables(){
+  withMachine(() => {
+    patchPitchTable(M.pdp1, M.basePt, TEMPERAMENTS[S.temp].cents);
+    M.pdp1.deposit(TUW, S.tuw);
+    retune(M.pdp1);
+    writeVariants(M.pdp1, M.info.plan, S.mod);
+  });
+}
+let pendingStruct = 0;
+/* Anything that changes the stream's shape — a note, a pattern, the tempo —
+   rebuilds it and drops the cursor back at the same tick, so editing stays live. */
+function structuralChanged(){
+  M.dirty = true;
+  if (!LIVE.on || pendingStruct) return;
+  pendingStruct = requestAnimationFrame(() => { pendingStruct = 0; repunch(); });
+}
+function songEdited(){ if (LIVE.on) structuralChanged(); else { M.dirty = true; compileNow(M.loopOnly); } }
+let pendingFrame = 0;
+function paramChanged(kind){
+  if (pendingFrame) return;
+  pendingFrame = requestAnimationFrame(() => {
+    pendingFrame = 0;
+    if (LIVE.on){
+      if (kind === "stream" && !liveRestream()) return repunch();
+      liveTables();
+    } else {
+      M.dirty = true;
+      compileNow(M.loopOnly);
+      applyMachine();
+    }
+    renderMachine();
+  });
+}
+/* Structural changes (arm, grid, cpu clock): rebuild the stream but drop the
+   cursor back where the playhead was, so it still feels continuous. */
+function repunch(){
+  if (!LIVE.on){ M.dirty = true; compileNow(M.loopOnly); applyMachine(); renderMachine(); return; }
+  const tick = liveTick();
+  try { startLive(M.loopOnly, tick); }
+  catch (e){ stop(); alert(e.message); }
+}
+
+/* -------------------------------------------------------------- readouts */
+function renderMachine(){
+  const f = tuwFields(S.tuw), bias = tuwBias(S.tuw);
+  $("biasVal").textContent = (bias >= 0 ? "+" : "") + bias + " \u00b7 " +
+    (bias >= 0 ? "+" : "") + (1200 * Math.log2(1 + 2 * bias / 512)).toFixed(1) + "\u00a2";
+  const uniform = f[0] === f[1] && f[1] === f[2] && f[2] === f[3];
+  const which = S.tuw === 0o642017 ? "stock" : S.tuw === a440Tuw() ? "a440" : uniform ? "flat" : "";
+  [...$("detSeg").children].forEach(x => x.classList.toggle("on", x.dataset.det === which));
+  $("a4Val").textContent = a4Hz().toFixed(2) + " Hz";
+  $("spreadVal").textContent = (1200 * Math.log2(voiceMult(0) / voiceMult(3))).toFixed(1) + "\u00a2 across voices";
+  $("bias").value = bias;
+  const md = S.mod, sel = selVoices();
+  const spread = (arr, fmt) => {
+    const s = sel.map(v => arr[v]);
+    const lo = Math.min(...s), hi = Math.max(...s);
+    return lo === hi ? fmt(lo) : fmt(lo) + "\u2013" + fmt(hi);
+  };
+  const mean = arr => sel.reduce((a, v) => a + arr[v], 0) / sel.length;
+  $("mRateVal").textContent = spread(md.rates, x => x.toFixed(2)) + " Hz";
+  $("mDepthVal").textContent = "\u00b1" + spread(md.depths, x => String(x)) + "\u00a2";
+  $("mRate").value = Math.round(mean(md.rates) * 100);
+  $("mDepth").value = Math.round(mean(md.depths));
+  [...$("modSeg").children].forEach(x =>
+    x.classList.toggle("on", md.on ? x.dataset.shape === md.shape : x.dataset.shape === "off"));
+  [...$("gridSeg").children].forEach(x => x.classList.toggle("on", +x.dataset.grid === md.grid));
+  [...$("modVoices").children].forEach(x => {
+    const v = +x.dataset.v;
+    x.classList.toggle("on", md.sel[v]);
+    x.classList.toggle("z", !md.depths[v]);
+    x.querySelector("i").textContent = md.rates[v].toFixed(2) + " \u00b1" + md.depths[v];
+  });
+  $("modRow").style.opacity = S.engine === "pdp1" ? "1" : ".4";
+  $("liveDot").className = LIVE.on ? "live" : "";
+  const c = M.info;
+  if (!c) return;
+  $("mLevels").textContent = c.plan.m.some(x => x)
+    ? c.plan.m.map(m => m ? "\u00b1" + m : "\u2013").join(" / ") : "\u2014";
+  $("mSlots").textContent = c.plan.slots ? c.plan.slots + " / 252 free" : "\u2014";
+  $("stSegs").textContent = c.segs + " / " + CAP_SEG + (c.over ? "  OVER" : "");
+  $("stSegs").className = c.over ? "warn" : "";
+  $("stMeter").style.width = Math.min(100, c.segs / CAP_SEG * 100) + "%";
+  $("stWords").textContent = c.words.length + " \u00d7 18 bit";
+  const secs = streamSeconds(c.words);
+  $("stTime").textContent = Math.floor(secs / 60) + ":" + String(Math.round(secs % 60)).padStart(2, "0");
+  const bytes = c.over ? 0 : rimTape(c.words, new Array(256).fill([0, 0])).length;
+  $("stTape").textContent = !bytes ? "\u2014" : (bytes / 120).toFixed(1) + " ft  (" + (bytes / 1024).toFixed(1) + " KB)";
+  $("stClip").textContent = c.clipped ? c.clipped + " clamped" : "none";
+  $("stClip").className = c.clipped ? "warn" : "";
+  let d = "";
+  for (let i = 0; i < Math.min(14, c.segs); i++){
+    const w1 = c.words[i * 2], w2 = c.words[i * 2 + 1];
+    const p = [(w1 >> 12) & 63, (w1 >> 6) & 63, w1 & 63, w2 & 63];
+    const m = (w2 >> 6) & 0o7777;
+    d += `<b>${w1.toString(8).padStart(6, "0")} ${w2.toString(8).padStart(6, "0")}</b>  ` +
+         p.map((x, v) => {
+           if (!x) return "\u00b7\u00b7\u00b7 ";
+           const bk = c.plan.back[v][x];
+           if (!bk) return noteName(x + 22) + " ";
+           return noteName(bk[0] + 22) + (bk[1] ? (bk[1] > 0 ? "+" : "") + bk[1] : " ");
+         }).join(" ") + ` ${((m + 1) * 0.35).toFixed(0)}ms\n`;
+  }
+  if (c.segs > 14) d += `\u2026 ${c.segs - 14} more\n`;
+  $("dump").innerHTML = d;
+}
+/* the four console lamps, straight off the program flags: a flag that is
+   oscillating is lit, a frozen one (rest, phase increment 0) is not */
+function setLamps(){
+  for (let v = 0; v < 4; v++){
+    const el = $("led" + v);
+    if (el) el.classList.toggle("on", LIVE.duty[v] > 0.05 && LIVE.duty[v] < 0.95);
+  }
+}
+
+/* -------------------------------------------------------------- controls */
+$("tempSel").innerHTML = Object.entries(TEMPERAMENTS)
+  .map(([k, t]) => `<option value="${k}">${t.name}</option>`).join("");
+$("tempSel").addEventListener("change", e => { S.temp = e.target.value; paramChanged("table"); });
+$("engSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  stop(); S.engine = b.dataset.eng;
+  [...$("engSeg").children].forEach(x => x.classList.toggle("on", x === b));
+  renderMachine();
+});
+$("cpuSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  S.chm = b.dataset.chm === "1";
+  [...$("cpuSeg").children].forEach(x => x.classList.toggle("on", x === b));
+  if (LIVE.on){ LIVE.totalSec = streamSeconds(M.info.words); renderMachine(); }
+  else { M.dirty = true; renderMachine(); }
+});
+/* The closest tuw to concert A at the current clock. tw1 = (field-4) + 2*bias,
+   so the field gives 1/512 resolution where the bias alone only gives 2/512. */
+function a440Tuw(){
+  const ptA = (M.pdp1 ? M.pdp1.examine(PT_BASE + 47) : 20185) * 5714.285714 / 262144;
+  const clock = S.chm ? CHM_FACTOR : 1;
+  let best = null;
+  for (let f = 0; f < 8; f++) for (let bi = -32; bi < 32; bi++){
+    const a = ptA * (1 + ((f - 4) + 2 * bi) / 512) * clock;
+    if (!best || Math.abs(a - 440) < Math.abs(best.a - 440)) best = { f, bi, a };
+  }
+  return setTuw([best.f, best.f, best.f, best.f], best.bi);
+}
+$("detSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.det === "stock") S.tuw = 0o642017;
+  // "no spread" means the voices stop beating against each other — it must NOT
+  // throw away the global bias, which is where the machine's actual pitch lives
+  else if (b.dataset.det === "flat") S.tuw = setTuw([4, 4, 4, 4], tuwBias(S.tuw));
+  else S.tuw = a440Tuw();
+  paramChanged("table");
+});
+$("bias").addEventListener("input", e => {
+  S.tuw = setTuw(tuwFields(S.tuw), +e.target.value | 0);
+  paramChanged("table");
+});
+$("modSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const wasOn = S.mod.on;
+  if (b.dataset.shape === "off") S.mod.on = false;
+  else if (wasOn && S.mod.shape === "drift" && b.dataset.shape === "drift"){
+    S.mod.seed = (Math.random() * 1e9) | 0;          // reroll the wobble: live
+    return paramChanged("stream");
+  }
+  else { S.mod.on = true; S.mod.shape = b.dataset.shape;
+         if (b.dataset.shape === "drift")
+           S.mod.rates = S.mod.rates.map(r => r > 1.2 ? r / 4 : r); }
+  if (wasOn === S.mod.on) paramChanged("stream");     // wow <-> drift: same layout
+  else repunch();                                     // arming changes the layout
+  renderMachine();
+});
+$("gridSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  S.mod.grid = +b.dataset.grid;
+  repunch(); renderMachine();
+});
+$("modVoices").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const v = +b.dataset.v, sel = S.mod.sel;
+  sel[v] = !sel[v];
+  if (!sel.some(Boolean)) sel.fill(true);       // never leave the sliders pointing at nothing
+  renderMachine();
+});
+$("mRate").addEventListener("input", e => {
+  const r = Math.max(0.04, +e.target.value / 100);
+  selVoices().forEach(v => S.mod.rates[v] = r);
+  paramChanged("stream");
+});
+$("mDepth").addEventListener("input", e => {
+  const d = +e.target.value;
+  selVoices().forEach(v => S.mod.depths[v] = d);
+  paramChanged("table");
+});
+
+/* ------------------------------------------------------------- exporting */
+function currentTables(){
+  const t = [];
+  for (let v = 0; v < 4; v++)
+    for (let i = 0; i < 64; i++){ const a = TAB + v * 0o100 + i; t.push([a, M.pdp1.examine(a)]); }
+  return t;
+}
+function dl(bytes, name, mime){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([bytes], { type: mime }));
+  a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const fileStem = () => (S.title || "pulse4").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+on("expRim", "click", () => {
+  const c = M.info || compileNow(false);
+  if (c.over) return alert("Stream is over capacity — nothing to punch.");
+  if (!LIVE.on) applyMachine();
+  dl(rimTape(c.words, currentTables()), fileStem() + ".rim", "application/octet-stream");
+});
+on("expWav", "click", async () => {
+  stop();
+  busy(true, "RENDERING\u2026");
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  try {
+    const c = compileNow(false);
+    if (c.over) throw new Error("Stream is over capacity.");
+    applyMachine();
+    writeVariants(M.pdp1, c.plan, S.mod);
+    loadStream(M.pdp1, c.words);
+    M.pdp1.setSenseSwitch(6, false);
+    const raw = render(M.pdp1, 44100, S.chm, 900);
+    const off = new OfflineAudioContext(2, raw.left.length, 44100);
+    const b = off.createBuffer(2, raw.left.length, 44100);
+    b.copyToChannel(raw.left, 0); b.copyToChannel(raw.right, 1);
+    const s = off.createBufferSource(); s.buffer = b;
+    const lp = off.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2000; lp.Q.value = 0.5;
+    const hp = off.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 30;
+    s.connect(lp); lp.connect(hp); hp.connect(off.destination); s.start();
+    dl(wavBytes(await off.startRendering()), fileStem() + ".wav", "audio/wav");
+  } catch (e){ alert(e.message); }
+  busy(false);
+});
+function busy(on, text){
+  if (text) $("statusText").textContent = text;
+  document.body.classList.toggle("busy", on);
+}
+function wavBytes(buf){
+  const n = buf.length, L = buf.getChannelData(0), R = buf.getChannelData(1);
+  const out = new DataView(new ArrayBuffer(44 + n * 4));
+  const str = (o, s) => { for (let i = 0; i < s.length; i++) out.setUint8(o + i, s.charCodeAt(i)); };
+  str(0, "RIFF"); out.setUint32(4, 36 + n * 4, true); str(8, "WAVEfmt ");
+  out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 2, true);
+  out.setUint32(24, 44100, true); out.setUint32(28, 44100 * 4, true);
+  out.setUint16(32, 4, true); out.setUint16(34, 16, true);
+  str(36, "data"); out.setUint32(40, n * 4, true);
+  for (let i = 0; i < n; i++){
+    out.setInt16(44 + i * 4, Math.max(-1, Math.min(1, L[i])) * 32767, true);
+    out.setInt16(46 + i * 4, Math.max(-1, Math.min(1, R[i])) * 32767, true);
+  }
+  return new Uint8Array(out.buffer);
+}
+/* ================= init ================= */
+window.addEventListener("pointerdown", () => { initAudio(); AC.resume(); }, { once: true });
+loadCompact(OLSON);
+machineBoot();
+applyMachine();
+compileNow(false);
+renderMachine();
+buildPiano();
+buildHex();
+renderAll();
+requestAnimationFrame(raf);
+
+</script>
+</body>
+</html>
