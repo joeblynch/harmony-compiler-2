@@ -267,7 +267,6 @@ export class PDP1CPU {
       case 0o26:  // dap
         this.memory.write(ma, (this.memory.read(ma) & 0o770000) | (this.ac & PDP1_MEMORY_ADDRESS_MASK));
         duration += PDP1_MEMORY_ACCESS_DURATION;
-        duration += PDP1_MEMORY_ACCESS_DURATION;
         break;
 
       case 0o32:  // dio
