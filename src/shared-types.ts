@@ -53,8 +53,8 @@ export interface RecompileMessage {
   testWord: number;
 }
 
-export interface SetTemperamentMessage {
-  type: 'set-temperament';
+export interface PatchPitchTableMessage {
+  type: 'patch-pitch-table';
   tape: DataTape;
 }
 
@@ -73,5 +73,5 @@ export type PDP1AudioMessage =
   | StopMessage
   | StoppedMessage
   | RecompileMessage
-  | SetTemperamentMessage
+  | PatchPitchTableMessage
   | FrameUpdateMessage;

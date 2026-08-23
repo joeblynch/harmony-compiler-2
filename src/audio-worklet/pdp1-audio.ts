@@ -67,8 +67,8 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
           this.compile(message.testWord, true);
           break;
 
-        case 'set-temperament':
-          this.applyTemperament(message.tape);
+        case 'patch-pitch-table':
+          this.applyPitchTablePatch(message.tape);
           break;
       }
     };
@@ -324,10 +324,10 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
     this.postLogs(logs);
   }
 
-  private applyTemperament(tape: DataTape) {
+  private applyPitchTablePatch(tape: DataTape) {
     try {
       const { pdp1 } = this;
-      const logs = ['# apply temperament', `mount: ${tape.url}`];
+      const logs = ['# apply pitch table patch', `mount: ${tape.url}`];
 
       // readIn runs the patch bootstrap to hlt; make sure it isn't gated by
       // leftover playback state (single-instruction stepping / a breakpoint).

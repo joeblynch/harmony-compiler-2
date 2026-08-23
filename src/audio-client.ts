@@ -6,7 +6,7 @@ import type {
   RestartMessage,
   StopMessage,
   RecompileMessage,
-  SetTemperamentMessage,
+  PatchPitchTableMessage,
   PDP1AudioMessage,
   MusicTape,
 } from './shared-types';
@@ -86,7 +86,7 @@ export class AudioClient {
 
     // Patch the frequency table to the selected temperament (if changed) before
     // the voices are read and compiled below.
-    await this.ensureTemperamentApplied();
+    await this.ensurePitchTablePatched();
 
     // Transfer a disposable copy so the source buffer (a local tape's only copy) is not detached.
     const sendData = new Uint8Array(musicTape.data);
@@ -266,7 +266,7 @@ export class AudioClient {
 
   // RIM-load the selected variant's patch tape into pt, unless pt already holds
   // it (pt persists in worklet memory across songs).
-  private async ensureTemperamentApplied() {
+  private async ensurePitchTablePatched() {
     const key = this.variantKey();
     if (key === this.appliedVariant) {
       return;
@@ -274,16 +274,16 @@ export class AudioClient {
 
     let patch = this.patchTapes.get(key);
     if (!patch) {
-      patch = await this.fetchTape(`tapes/temperaments/${key}.bin`);
+      patch = await this.fetchTape(`tapes/patches/${key}.bin`);
       this.patchTapes.set(key, patch);
     }
 
     // Transfer a disposable copy so the cached patch buffer is not detached.
     const sendData = new Uint8Array(patch.data);
     this.pdp1Audio!.port.postMessage({
-      type: 'set-temperament',
+      type: 'patch-pitch-table',
       tape: { url: patch.url, data: sendData },
-    } as SetTemperamentMessage, [sendData.buffer]);
+    } as PatchPitchTableMessage, [sendData.buffer]);
 
     this.appliedVariant = key;
   }
