@@ -1,11 +1,12 @@
 import type { MusicTapeInfo } from './shared-types';
 
 export const musicTapes: MusicTapeInfo[] = [
+  { url: 'tapes/m-g-r-1-d-110.bin',          title: 'm-g-r-1-d-110',                         artist: 'prs',                        tempo: 0,     voices: 4 },
   { url: 'tapes/m-g-r-1-c-110.bin',          title: 'm-g-r-1-c-110',                         artist: 'prs',                        tempo: 0,     voices: 4 },
   { url: 'tapes/m-g-r-1-b-110.bin',          title: 'm-g-r-1-b-110',                         artist: 'prs',                        tempo: 0,     voices: 4 },
-  { url: 'tapes/m-g-r-1-b.bin',              title: 'm-g-r-1-b',                             artist: 'prs',                        tempo: 0,     voices: 4 },
-  { url: 'tapes/m-g-r-1.bin',                title: 'm-g-r-1',                               artist: 'prs',                        tempo: 0,     voices: 4 },
-  { url: 'tapes/m-g-r-1-a.bin',              title: 'm-g-r-1-a',                             artist: 'prs',                        tempo: 0,     voices: 4 },
+  { url: 'tapes/m-g-r-1-b.bin',              title: 'm-g-r-1-b',                             artist: 'prs',                        tempo: 110,   voices: 4 },
+  { url: 'tapes/m-g-r-1.bin',                title: 'm-g-r-1',                               artist: 'prs',                        tempo: 110,   voices: 4 },
+  { url: 'tapes/m-g-r-1-a.bin',              title: 'm-g-r-1-a',                             artist: 'prs',                        tempo: 110,   voices: 4 },
   { url: 'tapes/BWV592-3.bin',               title: 'Concerto No. 1 in G 3rd movement',      artist: 'J.S. Bach',                  tempo: 0,     voices: 4 },
   { url: 'tapes/boc-olson.bin',              title: 'Olson',                                 artist: 'Boards of Canada',           tempo: 0o151, voices: 4 },
   { url: 'tapes/gf.bin',                     title: 'Goldfinger',                            artist: 'John Barry, Shirley Bassey', tempo: 0o170, voices: 4 },
