@@ -7,6 +7,7 @@
     "rebuild": "npm run clean && npm run build",
     "watch": "rollup -c -w",
     "start": "node dist/pdp1.js",
+    "serve": "python3 -m http.server -d dist",
     "dev": "npm run build && npm run start"
   },
   "keywords": [
