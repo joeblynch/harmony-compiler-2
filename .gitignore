@@ -24,3 +24,5 @@ yarn-error.log*
 .venv
 # self-signed dev HTTPS keys (npm run gen-dev-keys)
 .dev-keys/
+
+utils/ascii2fiodec/ascii2fiodec
