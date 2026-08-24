@@ -7,8 +7,9 @@
     "rebuild": "npm run clean && npm run build",
     "watch": "rollup -c -w",
     "start": "node dist/pdp1.js",
-    "serve": "python3 -m http.server -d dist",
-    "dev": "npm run build && npm run start"
+    "serve": "node utils/serve-https.js dist",
+    "dev": "npm run build && npm run start",
+    "gen-dev-keys": "mkdir -p .dev-keys && openssl req -x509 -newkey rsa:2048 -nodes -keyout .dev-keys/dev.key -out .dev-keys/dev.crt -days 3650 -subj \"/CN=localhost\" -addext \"subjectAltName=DNS:localhost,IP:127.0.0.1\""
   },
   "keywords": [
     "pdp1",

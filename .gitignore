@@ -25,3 +25,5 @@ yarn-error.log*
 macro
 
 .venv
+# self-signed dev HTTPS keys (npm run gen-dev-keys)
+.dev-keys/
