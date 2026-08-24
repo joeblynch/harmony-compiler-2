@@ -130,10 +130,10 @@ class PDP1AudioProcessor extends AudioWorkletProcessor {
         let left: number
         let right: number;
         left = (pf & 0o40) ? 0.5 : 0;     // voice 1
-        left += (pf & 0o20) ? -0.5 : 0;   // voice 2
+        left += (pf & 0o20) ? 0.5 : 0;   // voice 2
 
         right = (pf & 0o10) ? 0.5 : 0;    // voice 3
-        right += (pf & 0o04) ? -0.5 : 0;  // voice 4
+        right += (pf & 0o04) ? 0.5 : 0;  // voice 4
 
         // TODO: volume control from client side
         left *= 0.6;
