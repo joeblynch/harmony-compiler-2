@@ -21,9 +21,6 @@ yarn-error.log*
 # TypeScript cache
 *.tsbuildinfo
 
-# debug files
-macro
-
 .venv
 # self-signed dev HTTPS keys (npm run gen-dev-keys)
 .dev-keys/
