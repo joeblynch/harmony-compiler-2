@@ -1,0 +1,15 @@
+{
+  // Type-checks the CLI (Node) against the realm-agnostic emulator core: `npx tsc -p cli`.
+  // Not used by rollup; the root tsconfigs only include src/.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "..",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false
+  },
+  "include": ["./**/*.ts", "../src/pdp1/**/*.ts"]
+}

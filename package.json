@@ -9,7 +9,11 @@
     "start": "node dist/pdp1.js",
     "serve": "node utils/serve-https.js dist",
     "dev": "npm run build && npm run start",
-    "gen-dev-keys": "mkdir -p .dev-keys && openssl req -x509 -newkey rsa:2048 -nodes -keyout .dev-keys/dev.key -out .dev-keys/dev.crt -days 3650 -subj \"/CN=localhost\" -addext \"subjectAltName=DNS:localhost,IP:127.0.0.1\""
+    "gen-dev-keys": "mkdir -p .dev-keys && openssl req -x509 -newkey rsa:2048 -nodes -keyout .dev-keys/dev.key -out .dev-keys/dev.crt -days 3650 -subj \"/CN=localhost\" -addext \"subjectAltName=DNS:localhost,IP:127.0.0.1\"",
+    "pdp1": "tsx cli/pdp1.ts",
+    "test:cli": "tsx --test cli/*.test.ts",
+    "typecheck:cli": "tsc -p cli",
+    "build:ascii2fiodec": "cc -O0 -o utils/ascii2fiodec/ascii2fiodec utils/ascii2fiodec/ascii2fiodec.c"
   },
   "keywords": [
     "pdp1",
@@ -30,6 +34,7 @@
     "rollup": "^4.0.0",
     "rollup-plugin-copy": "^3.5.0",
     "tslib": "^2.6.0",
+    "tsx": "^4.23.12",
     "typescript": "^5.0.0"
   },
   "engines": {

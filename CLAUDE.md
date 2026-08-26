@@ -14,13 +14,15 @@ Because pitch comes from emulated timing, **instruction-level timing accuracy is
 npm install
 npm run build      # rollup -c  → dist/
 npm run watch      # rollup -c -w (rebuild on change)
+npm run gen-dev-keys   # one-time: self-signed cert into .dev-keys/ (git-ignored)
+npm run serve      # HTTPS static server for dist/ on https://localhost:8443 (utils/serve-https.js)
 ```
 
-There are **no tests** and **no lint** configured. Type checking happens during the rollup build via `@rollup/plugin-typescript`.
+There is **no lint**. Type checking of the browser bundles happens during the rollup build via `@rollup/plugin-typescript`. The only tests are for the CLI: `npm run test:cli` (Node's built-in runner via `tsx --test`) and `npm run typecheck:cli` (`tsc -p cli`).
 
-The output in `dist/` is a **static browser site** (IIFE bundle + copied `public/` assets). It must be served over HTTP — the AudioWorklet module load and the `fetch()` of tape files do not work from `file://`. Serve it with any static server, e.g. `npx serve dist` or `python3 -m http.server -d dist`.
+The output in `dist/` is a **static browser site** (IIFE bundle + copied `public/` assets). It must be served over HTTP(S) — the AudioWorklet module load and the `fetch()` of tape files do not work from `file://`. `npm run serve` does this (accept the self-signed cert once); any static server works too.
 
-> The `start`, `dev`, and `rebuild` npm scripts are **stale/broken**: they reference `dist/pdp1.js` (a Node entrypoint that doesn't exist — this is a browser app) and a `clean` script that isn't defined. Use `build`/`watch` and a static server instead.
+> The `start`, `dev`, and `rebuild` npm scripts are **stale/broken**: they reference `dist/pdp1.js` (a Node entrypoint that doesn't exist — this is a browser app) and a `clean` script that isn't defined. Use `build`/`watch` and `serve` instead.
 
 ## Two-bundle build (important)
 
@@ -56,6 +58,13 @@ Both bundles compile in the PDP-1 core (`src/pdp1/*`) and `src/shared-types.ts`.
 
 **5. `src/tape-decoder.ts`** — standalone disassembler/validator for Harmony-Compiler "intermediate" tapes (parses NOTES/BARS sections, checksums, articulation, tempo). Used by the upload path for inspection; **not** part of the audio playback path.
 
+**6. CLI — `cli/`** (Node, run with `tsx`; outside the rollup tsconfigs on purpose, it imports `src/pdp1` directly)
+- `npm run pdp1 -- assemble <source.mac> [-o out.rim]` runs the real DEC MACRO assembler tape (`pdp-1/tapes/macro/digital-1-1a-s-mb_6-63_MACRO.bin`) inside the emulator to assemble PDP-1 sources, following the MACRO manual's operating procedure: `readIn()` (halts at `0o1430`), Continue = pass 1, rewind, Continue = pass 2 (punches title lettering, the BIN loader, object blocks), Continue = jump block. Default output `public/tapes/<name>_hc2.rim`; **`public/tapes/pdp1m13.rim` stays canonical**, the `_hc2` output is for comparison.
+- `cli/fiodec.ts` is a byte-exact port of `utils/ascii2fiodec/ascii2fiodec.c` (source text → FIO-DEC tape, typewriter decoding). `cli/fiodec.test.ts` checks it against committed `.mac.fio` fixtures (generated once with the C tool) and, when present, the C binary itself — which is git-ignored and must be built with `npm run build:ascii2fiodec` (`-O0`: the C source has an out-of-bounds table scan and segfaults at `-O2`).
+- MACRO halt PCs (`MACRO_HALT` in `cli/assemble.ts`, verified against the loaded image): ready `01430`, pass 1 done `01403`, pass 2 done `01361`, jump block done `01377`, error stop `03706`, reader empty `01505`. A halt anywhere else aborts rather than pressing Continue from an unknown state.
+- The full pipeline **works end-to-end**: `public/tapes/pdp1m13_hc2.rim` (assembled 2026-08-25) loads to a memory image identical to canonical `pdp1m13.rim` (0/12288 words differ, same halt PC). If a source needs an instruction the emulator lacks, the run stops with exit status 2 and a diagnostic naming it.
+- The `.mac` sources in `pdp-1/tapes/` are **macro1 (cross-assembler) dialect**; real 6/63 MACRO has no `*` multiply operator and ends comments at the first tab. `pdp1m13.mac` needs three conversions to assemble (see the `pdp1-asm` skill's macro-assembler reference); the CLI warns about dropped `*` characters.
+
 ### End-to-end flow to play a song
 1. Client `init()` → fetch `tapes/pdp1m13.rim`, send `init`.
 2. Worklet `initPDP1` → `address=4`, mount, `readIn()` (RIM bootstrap loads the music player into banks 1–2).
@@ -70,4 +79,5 @@ Both bundles compile in the PDP-1 core (`src/pdp1/*`) and `src/shared-types.ts`.
 - `src/music-tapes.ts` — the playlist: each entry's tempo is **octal**, with a voice count. The `data-song` attribute in `public/index.html` indexes into this array.
 - Tempo (test word) valid range: **`0o40`–`0o1377`** octal (enforced in `audio-client.ts`).
 - `pdp1m13/pdp1m13.mac` (+ `.lst`/`.txt` listing) is the original MACRO assembly source for *PDP-1 Music 13*. Use it as the authority for magic memory addresses, e.g. `pla` = `0o1671` (playback entry), `nog` = `0o700` (clear-song address). Reach for it whenever you need to understand or change a hard-coded address in `pdp1-audio.ts`.
+- `pdp-1/tapes/` holds the MACRO assembler tape, the `pdp1m13`/`hc1d` sources with their listings and docs. `utils/title/` is the SIMH-based reference run (`title.ini`) that the CLI's assemble flow mirrors.
 - `macro/` is git-ignored scratch/debug output (the `macro1` assembler, audio dumps, gzipped artifacts) — not part of the app.

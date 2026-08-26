@@ -26,3 +26,5 @@ yarn-error.log*
 .dev-keys/
 
 utils/ascii2fiodec/ascii2fiodec
+
+*.fio
