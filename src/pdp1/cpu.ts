@@ -5,11 +5,15 @@ import {
   PDP1_NEG_ZERO,
   PDP1_SIGN_BIT_MASK,
   PDP1_UNSIGNED_MASK,
+  PDP1_STATUS_IO_MASK,
   PDP1_WORD_LENGTH,
   PDP1_WORD_MASK,
 } from './const';
-import { PDP1Memory } from './memory';
-import { PDP1TapeReader } from './tape-reader';
+import type { PDP1Memory } from './memory';
+import type { PDP1TapeReader } from './tape-reader';
+import type { PDP1TapePunch } from './tape-punch';
+import type { PDP1Typewriter } from './typewriter';
+
 
 export class PDP1CPU {
   public pc = 0;
@@ -22,8 +26,19 @@ export class PDP1CPU {
   private ss = 0;
   private tw = 0;
   private extend = 0;
+  private status = 0;
 
-  constructor(private readonly memory: PDP1Memory, private readonly tapeReader: PDP1TapeReader) {}
+  constructor(
+    private readonly memory: PDP1Memory,
+    private readonly tapeReader: PDP1TapeReader,
+    private readonly tapePunch: PDP1TapePunch,
+    private readonly typewriter?: PDP1Typewriter
+  ) {
+    if (this.typewriter) {
+      // free to receive a `tyo`
+      this.status |= this.typewriter.STATUS_BIT_MASK;
+    }
+  }
 
   get testWord() {
     return this.tw;
@@ -94,6 +109,7 @@ export class PDP1CPU {
         if (y & 0o0200 && !(this.ac & PDP1_SIGN_BIT_MASK))  skip = 1;  // spa
         if (y & 0o2000 && !(this.io & PDP1_SIGN_BIT_MASK))  skip = 1;  // spi
         if (y & 0o0100 && !this.ac)                         skip = 1;  // sza
+        if (y & 0o1000 && !this.overflow)                   skip = 1;  // szo
 
         if ((y & 0o7770) === 0o0000) {  // szf
           const flag = y & 0o7;
@@ -118,6 +134,11 @@ export class PDP1CPU {
           this.incrementPC();
         }
 
+        // szo clears the overflow flip-flop, whether or not the skip is taken
+        if (y & 0o1000) {
+          this.overflow = 0;
+        }
+
         break;
       }
 
@@ -126,15 +147,19 @@ export class PDP1CPU {
 
         if (!indirect) {
           switch (y & 0o7000) {
+            case 0o1000:  // ral
+              this.ac = ((this.ac << n) | (this.ac >> (PDP1_WORD_LENGTH - n))) & ((1 << PDP1_WORD_LENGTH) - 1);
+              break;
+
+            case 0o2000:  // ril
+              this.io = ((this.io << n) | (this.io >> (PDP1_WORD_LENGTH - n))) & ((1 << PDP1_WORD_LENGTH) - 1);
+              break;
+
             case 0o3000:  // rcl
               this.ac = this.ac << n | this.io >> PDP1_WORD_LENGTH - n;
               this.io = this.io << n | this.ac >> PDP1_WORD_LENGTH;
               this.ac &= PDP1_WORD_MASK;
               this.io &= PDP1_WORD_MASK;
-              break;
-
-            case 0o2000:  // ril
-              this.io = ((this.io << n) | (this.io >> (PDP1_WORD_LENGTH - n))) & ((1 << PDP1_WORD_LENGTH) - 1);
               break;
 
             case 0o5000:  // sal
@@ -160,8 +185,12 @@ export class PDP1CPU {
               this.ac = this.ac >> n | (this.ac & ((1 << n) - 1)) << PDP1_WORD_LENGTH - n;
               break;
 
+            case 0o2000:  // rir
+              this.io = this.io >> n | (this.io & ((1 << n) - 1)) << PDP1_WORD_LENGTH - n;
+              break;
+
             case 0o3000:  // rcr
-              this.ac |= (this.io & (1 << n) - 1) << PDP1_WORD_LENGTH + n;
+              this.ac |= (this.io & (1 << n) - 1) << PDP1_WORD_LENGTH;
               this.io = this.io >> n | (this.ac & (1 << n) - 1) << PDP1_WORD_LENGTH - n;
               this.ac >>= n;
               break;
@@ -180,17 +209,52 @@ export class PDP1CPU {
 
       case 0o72:  // iot group
         switch (y) {
+          case 0o0000:  // bare I/O wait
+            break;
+
           case 0o4074:  // eem
             this.extend = 1;
             break;
 
-          case 0o0002:  // rpb
+          case 0o0001:  // rpa
+            this.tapeReader.rpa();
+            this.status |= this.tapeReader.STATUS_BIT_MASK;
             if (indirect) {
-              this.io = this.tapeReader.rpb();
-            } else {
-              unsupported = true;
+              this.io = this.tapeReader.buffer;
             }
+            break;
 
+          case 0o0002:  // rpb
+            this.tapeReader.rpb();
+            this.status |= this.tapeReader.STATUS_BIT_MASK;
+            if (indirect) {
+              this.io = this.tapeReader.buffer;
+            }
+            break;
+
+          case 0o4003:  // tyo (no I/O wait)
+          case 0o0003:  // tyo
+            if (this.typewriter) {
+              this.typewriter.tyo(this.io);
+              this.status |= this.typewriter.STATUS_BIT_MASK;
+            }
+            break;
+
+          case 0o0005:  // ppa
+            this.tapePunch.ppa(this.io);
+            break;
+
+          case 0o0006:  // ppb
+            this.tapePunch.ppb(this.io);
+            break;
+
+          case 0o0030:  // rrb
+            this.io = this.tapeReader.buffer;
+            this.status &= ~this.tapeReader.STATUS_BIT_MASK;
+            break;
+
+          case 0o0033:  // cks
+            this.io = (this.status & PDP1_STATUS_IO_MASK) | (this.io & ~PDP1_STATUS_IO_MASK);
             break;
 
           default:
@@ -241,8 +305,8 @@ export class PDP1CPU {
         const sum = this.ac + cy;
         let result = ((sum & PDP1_WORD_MASK) + (sum >> PDP1_WORD_LENGTH)) & PDP1_WORD_MASK;
 
-        this.overflow = (+!((this.ac & PDP1_SIGN_BIT_MASK) ^ (cy & PDP1_SIGN_BIT_MASK)) ^ isSub) & 
-                        +((result & PDP1_SIGN_BIT_MASK) != (this.ac & PDP1_SIGN_BIT_MASK));
+        this.overflow |= +!((this.ac & PDP1_SIGN_BIT_MASK) ^ (cy & PDP1_SIGN_BIT_MASK)) &
+                         +((result & PDP1_SIGN_BIT_MASK) != (this.ac & PDP1_SIGN_BIT_MASK));
 
         // normalize -0 to +0, except for (-0) - (+0)
         if (result == PDP1_NEG_ZERO && !(isSub && this.ac == PDP1_NEG_ZERO && cy == PDP1_NEG_ZERO)) {
@@ -259,6 +323,11 @@ export class PDP1CPU {
         duration += PDP1_MEMORY_ACCESS_DURATION;
         break;
 
+      case 0o04:  // ior
+        this.ac |= this.memory.read(ma);
+        duration += PDP1_MEMORY_ACCESS_DURATION;
+        break;
+
       case 0o24:  // dac
         this.memory.write(ma, this.ac);
         duration += PDP1_MEMORY_ACCESS_DURATION;
@@ -267,6 +336,11 @@ export class PDP1CPU {
       case 0o26:  // dap
         this.memory.write(ma, (this.memory.read(ma) & 0o770000) | (this.ac & PDP1_MEMORY_ADDRESS_MASK));
         duration += PDP1_MEMORY_ACCESS_DURATION;
+        break;
+
+      case 0o30:  // dip
+        this.memory.write(ma, (this.ac & 0o770000) | (this.memory.read(ma) & 0o007777));
+        duration += PDP1_MEMORY_ACCESS_DURATION;                                                                                                                                            
         break;
 
       case 0o32:  // dio
@@ -362,7 +436,7 @@ export class PDP1CPU {
         break;
 
       case 0o70:  // law
-        this.ac = indirect ? ~y : y;
+        this.ac = indirect ? ~y & PDP1_WORD_MASK : y;
         break;
 
       case 0o22:  // lio

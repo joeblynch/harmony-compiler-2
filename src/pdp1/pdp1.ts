@@ -2,21 +2,31 @@ import { PDP1_MEMORY_ACCESS_DURATION, PDP1_MEMORY_ADDRESS_MASK, PDP1_WORD_MASK }
 import { PDP1CPU } from './cpu'
 import { PDP1Memory } from './memory';
 import { PDP1TapeReader } from './tape-reader';
+import { PDP1TapePunch } from './tape-punch';
+import { PDP1Typewriter, type PDP1TypewriterOutputHandler } from './typewriter';
 
 export class PDP1 {
   public breakpoint: number | null = -1;
   public singleInstruction = false;
   
+  public readonly cpu: PDP1CPU;
   public readonly memory: PDP1Memory;
   private readonly tapeReader: PDP1TapeReader;
-  public readonly cpu: PDP1CPU;
+  private readonly tapePunch: PDP1TapePunch;
+  private readonly typewriter?: PDP1Typewriter;
+
   private _address = 0;
   
 
-  constructor(memoryBanks = 1) {
+  constructor(memoryBanks = 1, private readonly onTypewriterOut?: PDP1TypewriterOutputHandler) {
+    if (onTypewriterOut) {
+      this.typewriter = new PDP1Typewriter(onTypewriterOut);
+    }
+    
     this.tapeReader = new PDP1TapeReader();
+    this.tapePunch = new PDP1TapePunch();
     this.memory = new PDP1Memory(memoryBanks);
-    this.cpu = new PDP1CPU(this.memory, this.tapeReader);
+    this.cpu = new PDP1CPU(this.memory, this.tapeReader, this.tapePunch, this.typewriter);
   }
 
   get address() {
@@ -139,5 +149,9 @@ export class PDP1 {
 
   unmountTape() {
     this.tapeReader.unmount();
+  }
+
+  tearPunchedTape() {
+    return this.tapePunch.tear();
   }
 }
