@@ -1,0 +1,23 @@
+{
+  "skill_name": "pdp1-asm",
+  "evals": [
+    {
+      "id": 0,
+      "name": "jda-table-sum",
+      "prompt": "You are working in /home/joe/projects/harmony-compiler-2. Write a PDP-1 MACRO assembly source file named tsm.mac implementing a table-summing subroutine for the real 6/63 MACRO assembler (the one `npm run pdp1 -- assemble` runs in this repo). Requirements:\n\n1. A subroutine `sum`, called with `jda sum`, that sums a table of 18-bit one's-complement words:\n   - At call time, AC holds the ADDRESS of the first table word.\n   - The word immediately after the `jda sum` call is an argument word: an instruction that, when executed, leaves the table LENGTH (number of words, > 0) in AC — e.g. `law 10` or `lac cnt`. The subroutine must execute that word to obtain the length.\n   - Call-site layout (must be exactly this convention):\n\n         jda sum\n         law 10       / argument word: executed by the subroutine, gives length\n         jmp ovf      / overflow return: control comes HERE if any add overflowed\n         ...          / normal return: control falls HERE otherwise, sum in AC\n\n   - Overflow must be detected via the machine's overflow flip-flop, handled correctly (know exactly which operations set it and which clear it, and make sure a stale overflow from before the call cannot cause a false overflow return).\n\n2. Quality bar: the inner loop must be as tight as you can make it in words and cycles; state the inner-loop cycle count in a comment and make it accurate. AC/IO may be clobbered; no other state may be.\n\n3. A test harness at location 100: an 8-word octal table of sample values that do NOT overflow, a call to `sum` using the convention above, a halt at a DISTINCT address for the overflow return (so the console operator can tell), and a normal halt with the sum in AC. Proper start line at the end.\n\n4. The file must assemble under the REAL MACRO tape via this repo's toolchain — respect real-MACRO source rules (several common macro1-dialect habits do not assemble; getting these rules right matters). Do NOT run the assembler. Do NOT modify any repository files.\n\nWrite exactly two files into the output directory you were given: tsm.mac, and NOTES.md briefly explaining your design choices and the inner-loop cycle math.",
+      "expected_output": "A real-MACRO-assemblable tsm.mac using the dvd-style jda convention (entry word = argument, xct i for the length word, idx-stepped two-way return), stale overflow cleared up front, a single szo check after a tight (~6 instruction / 60 us) inner loop, accurate cycle comments, 3-char labels, no '*', constants+start lines; plus NOTES.md with the cycle math.",
+      "files": [],
+      "assertions": [
+        "tsm.mac and NOTES.md both exist and are non-empty",
+        "Source uses only characters the repo FIO-DEC converter accepts - in particular no '*' (macro1-only, would be dropped)",
+        "All address tags and parameter symbols are at most 3 letters/digits (real-MACRO symbol rule); 4+ char names appear only as pseudo/macro instructions",
+        "jda calling convention correct: entry word receives the AC argument, return saved via dap, post-call argument word executed via xct i, return pointer stepped with idx",
+        "Return offsets match the spec: overflow return lands on the word after the argument (call+2), normal return on call+3",
+        "Overflow flip-flop handled correctly: stale overflow cleared before summing, checked ONCE after the loop (sound because non-overflowing adds do not clear it), szo skip sense correct",
+        "Inner loop is tight: at most 6 instructions and at most 60 us per iteration, with no per-iteration overflow test",
+        "Stated cycle counts are accurate per the real cost model (10 us memory-reference, +5 us per indirection, 5 us augmented/skip/jmp)",
+        "Harness and hygiene: 8-word octal table, call site exactly matches the required layout, distinct halt addresses, start line present, constants pseudo present if literals are used, no tabs inside comment text"
+      ]
+    }
+  ]
+}
